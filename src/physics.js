@@ -38,7 +38,7 @@ const Phys = (() => {
       mThermal: 0.9, mAvionics: 1.3, mSkids: 1.1, mPod: 2.2, mLatch: 0.4
     },
     quad: {
-      id: 'quad', name: 'Reference quad', n: 4, propD: 0.610, armR: 0.55,
+      id: 'quad', name: 'Reference quad', n: 4, propD: 0.610, armR: 0.62,
       thermal: false, pAux: 50,
       mFrame: 2.2, mArm: 0.22, mMotor: 0.85, mEsc: 0.15, mProp: 0.12,
       mThermal: 0, mAvionics: 1.2, mSkids: 0.9, mPod: 2.2, mLatch: 0.4

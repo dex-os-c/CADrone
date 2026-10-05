@@ -1,0 +1,1962 @@
+<title>MedVayu H6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ---------------------------------------------------------------------
+   Layout: instrument-panel dashboard. 3D stage on the left, tabbed
+   engineering panel on the right; stacks with a sticky stage on phones.
+   Palette: cool paper greys biased to the teal accent (the pod colour),
+   one warm signal colour for heat, state colours kept separate.
+   Type: Barlow Condensed for titles, IBM Plex Sans for text, Plex Mono for data.
+   --------------------------------------------------------------------- */
+:root {
+  --bg: #e9eff2; --surface: #f6f9fa; --surface2: #ffffff; --sunk: #dde6ea;
+  --line: #c3d0d6; --line2: #d7e1e5;
+  --ink: #10202a; --ink2: #435a67; --ink3: #6c8290;
+  --accent: #0a8189; --accent-soft: #d3eceb; --on-accent: #ffffff;
+  --heat: #d4531a; --heat-soft: #fbe3d6;
+  --good: #1b8a4b; --warn: #b66a00; --bad: #c8302a;
+  --c-hex: #0a8189; --c-quad: #c9741b; --c-grid: #c9d6dc; --c-axis: #5b727f;
+  --shadow: 0 1px 2px rgba(16,32,42,.08), 0 6px 20px rgba(16,32,42,.06);
+  --f-disp: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --hud: rgba(246,249,250,.86); --hud-ink: #10202a;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0a1116; --surface: #0f1920; --surface2: #142129; --sunk: #0b141a;
+  --line: #243540; --line2: #1b2a33;
+  --ink: #dbe7ed; --ink2: #98aeba; --ink3: #6f8795;
+  --accent: #38c6cf; --accent-soft: #11363b; --on-accent: #04171a;
+  --heat: #ff8a4c; --heat-soft: #3a2316;
+  --good: #4cd17f; --warn: #f0b052; --bad: #ff6b61;
+  --c-hex: #38c6cf; --c-quad: #f0a050; --c-grid: #1f303a; --c-axis: #8ea6b3;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --hud: rgba(12,22,28,.82); --hud-ink: #dbe7ed; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0a1116; --surface: #0f1920; --surface2: #142129; --sunk: #0b141a;
+  --line: #243540; --line2: #1b2a33;
+  --ink: #dbe7ed; --ink2: #98aeba; --ink3: #6f8795;
+  --accent: #38c6cf; --accent-soft: #11363b; --on-accent: #04171a;
+  --heat: #ff8a4c; --heat-soft: #3a2316;
+  --good: #4cd17f; --warn: #f0b052; --bad: #ff6b61;
+  --c-hex: #38c6cf; --c-quad: #f0a050; --c-grid: #1f303a; --c-axis: #8ea6b3;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --hud: rgba(12,22,28,.82); --hud-ink: #dbe7ed; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); -webkit-text-size-adjust: 100%; }
+button, input, select { font: inherit; color: inherit; }
+input[type=range] { accent-color: var(--accent); }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font: 600 22px/1.1 var(--f-disp); letter-spacing: .02em; text-transform: uppercase; }
+h3 { font: 600 12px/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+p { margin: 0; }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; display: flex; align-items: center; gap: 16px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand b { font: 700 26px/1 var(--f-disp); letter-spacing: .04em; text-transform: uppercase; }
+.brand b i { color: var(--accent); font-style: normal; }
+.brand span { font: 500 11px/1.2 var(--f-mono); color: var(--ink3); letter-spacing: .04em; }
+.tabs { display: flex; gap: 2px; margin-left: auto; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { border: 0; background: none; padding: 8px 14px; font: 500 13px/1 var(--f-body); color: var(--ink2); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.iconbtn { border: 1px solid var(--line); background: var(--surface2); border-radius: 6px; width: 34px; height: 34px; display: grid; place-items: center; }
+.iconbtn:hover { border-color: var(--accent); }
+
+/* ---------- main grid ---------- */
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 420px; height: calc(100vh - 53px); min-height: 520px; }
+#stage { position: relative; min-width: 0; overflow: hidden; background: #aac; touch-action: none; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+#panel { min-width: 0; overflow-y: auto; background: var(--surface); border-left: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ---------- stage overlays ---------- */
+.hud { position: absolute; background: var(--hud); color: var(--hud-ink); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 8px; font: 500 12px/1.3 var(--f-mono); }
+#viewbar { left: 12px; top: 12px; display: flex; gap: 4px; padding: 4px; flex-wrap: wrap; max-width: calc(100% - 24px); }
+#viewbar button { border: 0; background: transparent; padding: 6px 9px; border-radius: 5px; font: 500 11px/1 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: inherit; }
+#viewbar button:hover { background: var(--accent-soft); }
+#viewbar button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+#explodeBox { left: 12px; right: 12px; bottom: 12px; padding: 8px 14px; display: flex; align-items: center; gap: 14px; }
+#explodeBox label { white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
+#explodeBox output { min-width: 3.2em; text-align: right; }
+#explodeBox input { flex: 1; min-width: 0; }
+#labelLayer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+#labelLayer svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#labelLayer line { stroke: var(--accent); stroke-width: 1; opacity: .85; }
+#labelLayer circle { fill: var(--accent); }
+.plabel { position: absolute; transform: translateY(-50%); padding: 2px 7px; border-radius: 4px; background: var(--hud); color: var(--hud-ink); border: 1px solid var(--line); font: 500 11px/1.3 var(--f-mono); white-space: nowrap; pointer-events: auto; cursor: pointer; }
+.plabel:hover, .plabel.sel { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+#statusPill { right: 12px; top: 12px; padding: 6px 10px; display: flex; gap: 10px; align-items: center; }
+#statusPill i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+#loadNote { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink2); font: 500 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; background: var(--bg); transition: opacity .4s; }
+#loadNote.done { opacity: 0; pointer-events: none; }
+
+/* flight HUD */
+#flightHud { left: 12px; top: 12px; padding: 10px 12px; display: none; gap: 4px 16px; grid-template-columns: repeat(2, auto); }
+#flightHud div { display: flex; justify-content: space-between; gap: 10px; }
+#flightHud span { color: var(--ink3); }
+#flightHud .full { grid-column: 1 / -1; }
+#rotorBars { right: 12px; bottom: 12px; padding: 10px 12px; display: none; flex-direction: column; gap: 6px; width: min(260px, 52%); }
+.rbars { display: flex; gap: 6px; align-items: flex-end; height: 74px; }
+.rbar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
+.rbar .trk { flex: 1; width: 100%; background: var(--sunk); border-radius: 3px; position: relative; overflow: hidden; border: 1px solid var(--line2); }
+.rbar .fil { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); transition: background .15s; }
+.rbar .cmd { position: absolute; left: -1px; right: -1px; height: 2px; background: var(--ink); opacity: .75; }
+.rbar.dead .fil { background: var(--bad); }
+.rbar small { font-size: 10px; color: var(--ink3); }
+.rbar.dead small { color: var(--bad); font-weight: 600; }
+#thrustHist { width: 100%; height: 50px; background: var(--sunk); border-radius: 4px; border: 1px solid var(--line2); }
+#stick { position: absolute; left: 0; right: 0; bottom: 0; display: none; justify-content: space-between; padding: 0 20px calc(18px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.joy { width: 112px; height: 112px; border-radius: 50%; border: 1.5px solid var(--hud-ink); background: var(--hud); position: relative; pointer-events: auto; touch-action: none; opacity: .85; }
+.joy i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: var(--accent); }
+.joy b { position: absolute; font: 500 9px var(--f-mono); color: var(--ink3); letter-spacing: .06em; }
+.toast { position: absolute; left: 50%; top: 54px; transform: translateX(-50%); padding: 8px 14px; border-radius: 6px; background: var(--ink); color: var(--bg); font: 500 12px var(--f-mono); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 5; text-align: center; max-width: 90%; }
+.toast.on { opacity: .96; }
+
+/* ---------- panel pieces ---------- */
+.card { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface2); padding: 8px 12px; border-radius: 6px; font: 500 13px/1.1 var(--f-body); }
+.btn:hover { border-color: var(--accent); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn.warn { background: var(--bad); border-color: var(--bad); color: #fff; font-weight: 600; }
+.btn.sm { padding: 5px 9px; font-size: 12px; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: default; }
+.sl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.sl label { font-size: 12px; color: var(--ink2); }
+.sl output { font: 500 12px var(--f-mono); }
+.sl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 2px 0 0; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.kpi { background: var(--surface); border: 1px solid var(--line2); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+.kpi small { display: block; font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+.kpi b { font: 600 20px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; }
+.kpi b em { font: 400 11px var(--f-mono); color: var(--ink3); font-style: normal; margin-left: 3px; }
+.kpi.good b { color: var(--good); } .kpi.warn b { color: var(--warn); } .kpi.bad b { color: var(--bad); }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 600 11px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
+.pill.good { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.pill.warn { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.formula { font: 400 12px/1.7 var(--f-mono); background: var(--sunk); border: 1px solid var(--line2); border-radius: 6px; padding: 8px 10px; overflow-x: auto; white-space: pre; color: var(--ink); }
+.formula .n { color: var(--accent); font-weight: 600; }
+.formula .c { color: var(--ink3); }
+details { border: 1px solid var(--line2); border-radius: 6px; background: var(--surface); }
+details > summary { padding: 8px 10px; cursor: pointer; font: 600 12px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink2); list-style: none; display: flex; justify-content: space-between; }
+details > summary::after { content: '+'; color: var(--accent); }
+details[open] > summary::after { content: '–'; }
+details > div { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.note { font-size: 12px; color: var(--ink2); }
+.tag { font: 600 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; background: var(--heat-soft); color: var(--heat); white-space: nowrap; }
+.partlist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pbtn { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--line2); background: var(--surface); border-radius: 6px; padding: 6px 8px; font-size: 12px; min-width: 0; }
+.pbtn span { line-height: 1.25; }
+.pbtn i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.pbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.pbtn .eye { margin-left: auto; opacity: .55; font: 500 10px var(--f-mono); }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line2); text-align: right; font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; font-family: var(--f-body); }
+th { font: 600 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+td.w { color: var(--good); font-weight: 600; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--c-axis); font: 500 10px var(--f-mono); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font: 500 11px var(--f-mono); color: var(--ink2); }
+.legend i { display: inline-block; width: 16px; height: 0; border-top: 2.5px solid; vertical-align: middle; margin-right: 5px; }
+.scroll-x { overflow-x: auto; }
+.step { display: flex; flex-direction: column; gap: 10px; }
+.step ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.dots { display: flex; gap: 5px; flex-wrap: wrap; }
+.dots button { width: 22px; height: 6px; border-radius: 3px; border: 0; background: var(--line); padding: 0; }
+.dots button.on { background: var(--accent); }
+.dots button.past { background: var(--ink3); }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px; }
+kbd { font: 500 11px var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+.hide { display: none !important; }
+
+/* ---------- small screens: stage sticks above a scrolling panel ---------- */
+@media (max-width: 900px) {
+  .app { display: block; height: auto; }
+  #stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 86px); height: 44vh; min-height: 280px; z-index: 10; }
+  #panel { border-left: 0; overflow: visible; }
+  .top { gap: 6px 12px; }
+  .brand span { display: none; }
+  .tabs { margin-left: 0; order: 3; width: 100%; }
+  .plabel { font-size: 9px; padding: 1px 4px; }
+  #viewbar button { padding: 5px 7px; font-size: 10px; }
+  #flightHud { font-size: 11px; padding: 6px 8px; }
+  #stage[data-mode="flight"] #statusPill { display: none; }
+  #rotorBars { top: 12px; right: 12px; bottom: auto; width: 140px; padding: 6px 8px; gap: 4px; }
+  .rbars { height: 40px; } .rbar small { font-size: 8px; } #thrustHist { height: 26px; }
+  #stage[data-mode="flight"] #flightHud { max-width: calc(100% - 172px); }
+  .partlist { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="top">
+  <div class="brand"><b>Med<i>Vayu</i> H6</b><span>HEXACOPTER · MODULAR MEDICAL POD · eVTOL/DRONES 2026</span></div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" data-tab="design" aria-selected="true">Design</button>
+    <button class="tab" role="tab" data-tab="physics" aria-selected="false">Physics</button>
+    <button class="tab" role="tab" data-tab="flight" aria-selected="false">Flight</button>
+    <button class="tab" role="tab" data-tab="compare" aria-selected="false">Compare</button>
+    <button class="tab" role="tab" data-tab="present" aria-selected="false">Present</button>
+    <button class="tab" role="tab" data-tab="notes" aria-selected="false">Notes</button>
+  </nav>
+  <button class="iconbtn" id="themeBtn" aria-label="Toggle light and dark theme" title="Toggle theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor"/></svg></button>
+</header>
+
+<div class="app">
+  <section id="stage" aria-label="3D viewport">
+    <div id="loadNote">Building model…</div>
+    <div id="labelLayer"><svg id="leaders"></svg></div>
+    <div class="hud" id="viewbar" role="toolbar" aria-label="Camera and display">
+      <button data-view="iso">Iso</button><button data-view="front">Front</button><button data-view="side">Side</button><button data-view="top">Top</button>
+      <button id="btnLabels" aria-pressed="false">Labels</button><button id="btnWire" aria-pressed="false">Wire</button><button id="btnSpin" aria-pressed="true">Spin</button>
+    </div>
+    <div class="hud" id="statusPill"><i></i><span id="statusTxt">ISA 4000 m</span><span style="color:var(--ink3)">grid 1 m</span></div>
+    <div class="hud" id="flightHud"></div>
+    <div class="hud" id="rotorBars"><div class="rbars" id="rbars"></div><canvas id="thrustHist" width="240" height="50"></canvas></div>
+    <div class="hud" id="explodeBox"><label for="explode">Exploded</label><input type="range" id="explode" min="0" max="100" value="0" aria-label="Exploded view"><output id="explodeOut" class="mono">0%</output></div>
+    <div id="stick"><div class="joy" id="joyL"><i></i><b style="left:50%;top:4px;transform:translateX(-50%)">UP</b><b style="left:50%;bottom:4px;transform:translateX(-50%)">DOWN</b><b style="left:6px;top:50%">YAW</b></div><div class="joy" id="joyR"><i></i><b style="left:50%;top:4px;transform:translateX(-50%)">FWD</b><b style="left:50%;bottom:4px;transform:translateX(-50%)">BACK</b></div></div>
+    <div class="toast" id="toast"></div>
+  </section>
+  <aside id="panel" aria-live="polite"></aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ===== physics.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · physics.js
+   Pure engineering model. No DOM, no THREE, so it can be unit-tested.
+   Every number marked ASSUMED is a design assumption, not measured data.
+   Replace them with datasheet / test values as the 3DEXPERIENCE model matures.
+   ===================================================================== */
+const Phys = (() => {
+  const G0 = 9.80665;          // standard gravity, m/s²
+  const RGAS = 287.058;        // specific gas constant of dry air, J/(kg·K)
+  const GAMMA = 1.4;           // ratio of specific heats for air
+  const RHO0 = 1.225;          // ISA sea-level density, kg/m³
+
+  /* ---------- Assumptions (all printed in the UI) ---------- */
+  const A = {
+    FM: 0.70,            // rotor figure of merit in hover (ASSUMED; large low-solidity props)
+    CT: 0.011,           // hover thrust coefficient T/(ρ·A·(ΩR)²) (ASSUMED)
+    etaMotor: 0.90,      // motor efficiency at hover (ASSUMED)
+    etaEsc: 0.95,        // ESC efficiency (ASSUMED)
+    pMotorMax: 2000,     // continuous electrical power limit per motor, W (ASSUMED)
+    machTipMax: 0.65,    // tip Mach limit for noise and compressibility (ASSUMED)
+    battSpecEnergy: 200, // pack-level specific energy, Wh/kg (ASSUMED, Li-ion pack)
+    dod: 0.80,           // usable depth of discharge, keeps a 20 % reserve (ASSUMED)
+    packEff: 0.97,       // pack electrical efficiency; the 3 % loss heats the pack (ASSUMED)
+    capture: 0.25,       // share of motor+ESC heat delivered to the battery loop (ASSUMED)
+    UAins: 6,            // insulated pack heat-loss conductance, W/K (ASSUMED)
+    UAopen: 12,          // uninsulated pack heat-loss conductance, W/K (ASSUMED)
+    TcellMax: 30,        // controller bypasses the loop above this cell temp, °C (ASSUMED)
+    capSlope: 0.0075,    // capacity lost per °C below 25 °C (ASSUMED generic Li-ion trend)
+    capFloor: 0.40       // lowest capacity factor the model returns (ASSUMED)
+  };
+
+  /* ---------- Vehicle definitions (mass figures are ASSUMED estimates) ---------- */
+  const VEH = {
+    hex: {
+      id: 'hex', name: 'MedVayu H6', n: 6, propD: 0.914, armR: 1.00,
+      thermal: true, pAux: 80,
+      mFrame: 2.8, mArm: 0.28, mMotor: 0.85, mEsc: 0.15, mProp: 0.20,
+      mThermal: 0.9, mAvionics: 1.3, mSkids: 1.1, mPod: 2.2, mLatch: 0.4
+    },
+    quad: {
+      id: 'quad', name: 'Reference quad', n: 4, propD: 0.610, armR: 0.62,
+      thermal: false, pAux: 50,
+      mFrame: 2.2, mArm: 0.22, mMotor: 0.85, mEsc: 0.15, mProp: 0.12,
+      mThermal: 0, mAvionics: 1.2, mSkids: 0.9, mPod: 2.2, mLatch: 0.4
+    }
+  };
+
+  const DEFAULT_ENV = { h: 3000, dT: 0, payload: 5, battWh: 2400, thermal: true };
+
+  /* ---------- International Standard Atmosphere, troposphere (0–11 km) ---------- */
+  // T = T0 − L·h ; p = p0·(T/T0)^(g/(R·L)) ; ρ = p/(R·T). dT shifts temperature only;
+  // pressure stays on the ISA profile (pressure-altitude convention).
+  function isa(h, dT = 0) {
+    const T0 = 288.15, L = 0.0065, p0 = 101325;
+    const Ts = T0 - L * h;
+    const p = p0 * Math.pow(Ts / T0, G0 / (RGAS * L));
+    const T = Ts + dT;
+    const rho = p / (RGAS * T);
+    return { h, Tstd: Ts, T, Tc: T - 273.15, p, rho, sigma: rho / RHO0, a: Math.sqrt(GAMMA * RGAS * T) };
+  }
+
+  /* ---------- Rotor layout. x right, z backward, y up (matches the 3D scene) ---------- */
+  function layout(v) {
+    const out = [], step = 360 / v.n, start = v.n === 6 ? 30 : 45;
+    for (let i = 0; i < v.n; i++) {
+      const th = (start + step * i) * Math.PI / 180;   // measured from nose, clockwise seen from above
+      out.push({ i, th, x: v.armR * Math.sin(th), z: -v.armR * Math.cos(th), s: i % 2 === 0 ? 1 : -1 });
+    }
+    return out;
+  }
+
+  /* ---------- Mass budget, kg ---------- */
+  function massBreakdown(v, env) {
+    const it = {
+      frame: v.mFrame, arms: v.n * v.mArm, motors: v.n * v.mMotor, esc: v.n * v.mEsc,
+      props: v.n * v.mProp, battery: env.battWh / A.battSpecEnergy, thermal: v.thermal ? v.mThermal : 0,
+      avionics: v.mAvionics, skids: v.mSkids, pod: v.mPod, latch: v.mLatch, payload: env.payload
+    };
+    let total = 0; for (const k in it) total += it[k];
+    return { items: it, total };
+  }
+
+  /* ---------- Battery: cell temperature and capacity derating ---------- */
+  function capacityFactor(Tc) { return Tc >= 25 ? 1 : Math.max(A.capFloor, 1 - A.capSlope * (25 - Tc)); }
+
+  function battery(v, env, atm, Pprop) {
+    const lossMotEsc = Pprop * (1 - A.etaMotor * A.etaEsc);   // waste heat from motors + ESCs, W
+    const Qself = Pprop * (1 - A.packEff);                    // pack's own I²R heat, W
+    const managed = v.thermal && env.thermal;
+    let Qin, UA, Tcell;
+    if (managed) { Qin = A.capture * lossMotEsc + Qself; UA = A.UAins; Tcell = Math.min(atm.Tc + Qin / UA, A.TcellMax); }
+    else { Qin = Qself; UA = A.UAopen; Tcell = atm.Tc + Qin / UA; }
+    return { managed, lossMotEsc, Qself, Qin, UA, Tcell, f: capacityFactor(Tcell) };
+  }
+
+  /* ---------- Per-rotor thrust limit ---------- */
+  // Power limit:  P_el = T^1.5 / (√(2ρA)·FM·η)  →  T = (Pmax·FM·η·√(2ρA))^(2/3)
+  // Tip-Mach limit: T = ρ·A·CT·(M·a)²
+  function fmaxRotor(v, atm) {
+    const Ar = Math.PI * Math.pow(v.propD / 2, 2), eta = A.etaMotor * A.etaEsc;
+    const byPower = Math.pow(A.pMotorMax * A.FM * eta * Math.sqrt(2 * atm.rho * Ar), 2 / 3);
+    const byMach = atm.rho * Ar * A.CT * Math.pow(A.machTipMax * atm.a, 2);
+    return { f: Math.min(byPower, byMach), byPower, byMach, limit: byPower <= byMach ? 'motor power' : 'tip Mach' };
+  }
+
+  // Electrical power for one rotor producing thrust f (momentum theory)
+  function rotorPower(v, atm, f) {
+    const Ar = Math.PI * Math.pow(v.propD / 2, 2);
+    return Math.pow(Math.max(f, 0), 1.5) / (Math.sqrt(2 * atm.rho * Ar) * A.FM * A.etaMotor * A.etaEsc);
+  }
+
+  // Reaction-torque ratio k = Q/T (m). From Q/T = CQ·R/CT with CQ = CP = CT^1.5/(√2·FM)
+  function kYaw(v) { return (v.propD / 2) * Math.sqrt(A.CT) / (Math.SQRT2 * A.FM); }
+
+  /* ---------- Control allocation ----------
+     Unknown rotor thrusts f. Equations (rows): total thrust, roll-axis moment, yaw, pitch-axis moment.
+       Σ f = T          Σ −z·f = τx          Σ s·k·f = τy          Σ x·f = τz
+     Solved as damped weighted least squares (yaw has the lowest weight, so yaw is sacrificed first),
+     then rotors outside [0, fmax] are clamped one at a time and the rest re-solved.            */
+  function solve4(M, b) {
+    const n = 4, a = M.map((r, i) => r.concat([b[i]]));
+    for (let c = 0; c < n; c++) {
+      let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(a[r][c]) > Math.abs(a[p][c])) p = r;
+      [a[c], a[p]] = [a[p], a[c]];
+      const d = a[c][c] || 1e-12;
+      for (let r = c + 1; r < n; r++) { const k = a[r][c] / d; for (let q = c; q <= n; q++) a[r][q] -= k * a[c][q]; }
+    }
+    const x = new Array(n).fill(0);
+    for (let r = n - 1; r >= 0; r--) { let s = a[r][n]; for (let q = r + 1; q < n; q++) s -= a[r][q] * x[q]; x[r] = s / (a[r][r] || 1e-12); }
+    return x;
+  }
+
+  function allocate(L, failed, cmd, fmax, k, wYaw = 0.15) {
+    const n = L.length, W = [1, 1, wYaw, 1];
+    const col = i => [1, -L[i].z, L[i].s * k, L[i].x];
+    const lock = new Array(n).fill(null); for (const i of failed) lock[i] = 0;
+    const f = new Array(n).fill(0);
+    for (let it = 0; it <= n; it++) {
+      const free = []; for (let i = 0; i < n; i++) if (lock[i] === null) free.push(i);
+      // Bias toward even loading: solve for the deviation from an equal share of the thrust
+      // command, so healthy rotors stay evenly loaded instead of some being switched off.
+      const ref = free.length ? Math.max(cmd[0], 0) / free.length : 0;
+      const b = cmd.slice();
+      for (let i = 0; i < n; i++) if (lock[i] !== null) { const c = col(i); for (let r = 0; r < 4; r++) b[r] -= c[r] * lock[i]; }
+      for (const i of free) { const c = col(i); for (let r = 0; r < 4; r++) b[r] -= c[r] * ref; }
+      const cols = free.map(i => col(i).map((x, r) => x * W[r]));
+      const M = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
+      for (const c of cols) for (let r = 0; r < 4; r++) for (let q = 0; q < 4; q++) M[r][q] += c[r] * c[q];
+      const tr = M[0][0] + M[1][1] + M[2][2] + M[3][3];
+      for (let r = 0; r < 4; r++) M[r][r] += 1e-7 * tr + 1e-12;
+      const y = solve4(M, b.map((x, r) => x * W[r]));
+      free.forEach((i, kk) => { f[i] = ref + cols[kk].reduce((s, c, r) => s + c * y[r], 0); });
+      let worst = -1, wv = 1e-9, wb = 0;
+      for (const i of free) {
+        const lo = -f[i], hi = f[i] - fmax, viol = Math.max(lo, hi);
+        if (viol > wv) { wv = viol; worst = i; wb = lo > hi ? 0 : fmax; }
+      }
+      if (worst < 0) break;
+      lock[worst] = wb; f[worst] = wb;
+    }
+    for (let i = 0; i < n; i++) f[i] = lock[i] !== null ? lock[i] : Math.min(Math.max(f[i], 0), fmax);
+    const res = [0, 0, 0, 0];
+    for (let i = 0; i < n; i++) { const c = col(i); for (let r = 0; r < 4; r++) res[r] += c[r] * f[i]; }
+    for (let r = 0; r < 4; r++) res[r] -= cmd[r];
+    return { f, res };
+  }
+
+  /* ---------- Motor-out check at hover ----------
+     For each rotor in turn: remove it, ask the allocator to hold weight with zero moments,
+     record the largest thrust any remaining rotor must give.                              */
+  function motorOut(v, Wt, fmax) {
+    const L = layout(v), k = kYaw(v);
+    const tolT = 0.005 * Wt, tolM = 0.005 * Wt * v.armR;
+    let worst = null;
+    for (let i = 0; i < v.n; i++) {
+      const r = allocate(L, [i], [Wt, 0, 0, 0], Infinity, k);
+      const fReq = Math.max(...r.f);
+      const holds = Math.abs(r.res[0]) < tolT && Math.abs(r.res[1]) < tolM && Math.abs(r.res[3]) < tolM;
+      const yawOK = Math.abs(r.res[2]) < tolM;
+      let status;
+      if (holds && yawOK) status = fReq <= fmax ? 'ok' : 'saturated';
+      else if (holds) status = 'yaw-lost';
+      else status = 'lost';
+      const rank = { ok: 0, saturated: 1, 'yaw-lost': 2, lost: 3 }[status];
+      if (!worst || rank > worst.rank || (rank === worst.rank && fReq > worst.fReq)) worst = { i, f: r.f, fReq, status, rank };
+    }
+    return { status: worst.status, fReq: worst.fReq, rotor: worst.i, f: worst.f,
+             margin: (worst.status === 'ok' || worst.status === 'saturated') ? fmax / worst.fReq : 0 };
+  }
+
+  /* ---------- Full evaluation ---------- */
+  function evaluate(v, env) {
+    const atm = isa(env.h, env.dT);
+    const mb = massBreakdown(v, env);
+    const Wt = mb.total * G0;
+    const R = v.propD / 2, Ar = Math.PI * R * R, Atot = v.n * Ar, eta = A.etaMotor * A.etaEsc;
+    const Tr = Wt / v.n;
+    const vi = Math.sqrt(Tr / (2 * atm.rho * Ar));                      // induced velocity at the disk
+    const Pid = Math.pow(Wt, 1.5) / Math.sqrt(2 * atm.rho * Atot);      // ideal hover power
+    const Pprop = Pid / (A.FM * eta);                                   // electrical power to rotors
+    const Ptot = Pprop + v.pAux;
+    const tipV = Math.sqrt(Tr / (atm.rho * Ar * A.CT));
+    const rpm = tipV / R * 60 / (2 * Math.PI);
+    const batt = battery(v, env, atm, Pprop);
+    const usableWh = env.battWh * A.dod * batt.f;
+    const endurance = usableWh / Ptot * 60;                             // minutes
+    const fm = fmaxRotor(v, atm);
+    const TW = v.n * fm.f / Wt;
+    const mo = motorOut(v, Wt, fm.f);
+    return { v, env, atm, mass: mb, Wt, R, Ar, Atot, Tr, vi, Pid, Pprop, Ptot, Pmotor: Pprop / v.n,
+             DL: Wt / Atot, tipV, rpm, mach: tipV / atm.a, batt, usableWh, endurance,
+             fmax: fm, TW, mo, kyaw: kYaw(v), eta };
+  }
+
+  function sweep(v, env, hs) {
+    return hs.map(h => { const e = evaluate(v, Object.assign({}, env, { h })); return { h, e }; });
+  }
+
+  // Highest altitude (m) where cond(eval) stays true, scanning upward from sea level
+  function ceiling(v, env, cond, hMax = 9000, step = 50) {
+    let last = null;
+    for (let h = 0; h <= hMax; h += step) {
+      if (cond(evaluate(v, Object.assign({}, env, { h })))) last = h; else break;
+    }
+    return last;
+  }
+
+  const api = { A, VEH, DEFAULT_ENV, G0, RHO0, isa, layout, massBreakdown, capacityFactor, battery, fmaxRotor,
+                rotorPower, kYaw, allocate, motorOut, evaluate, sweep, ceiling };
+  if (typeof module !== 'undefined') module.exports = api;
+  return api;
+})();
+
+/* ===== sim.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · sim.js
+   Rigid-body flight simulation (6 DOF) with a cascaded controller,
+   control allocation, motor lag, skid contact and fault injection.
+   World frame: x east, y up, z south. Body frame: x right, y up, z back,
+   nose points to −z. Uses the global THREE for vector/quaternion math.
+   ===================================================================== */
+const SimCfg = {
+  dt: 1 / 240,          // fixed physics step, s
+  motorTau: 0.06,       // rotor thrust first-order lag, s (ASSUMED)
+  fdiDelay: 0.20,       // time to detect a dead motor and re-allocate, s (ASSUMED)
+  tiltMax: 25,          // maximum commanded tilt, degrees (sim limit)
+  vMax: 10,             // maximum horizontal speed, m/s (sim limit, not a performance claim)
+  climbMax: 3.0,        // maximum climb/descent rate, m/s (sim limit)
+  cdA: { hex: 0.30, quad: 0.22 },   // drag area, m² (ASSUMED)
+  angDamp: 0.8,         // aerodynamic angular damping, N·m·s/rad (ASSUMED)
+  skidH: 0.42,          // body origin height above ground when landed, m (matches the 3D model)
+  kp: 36, kd: 9.6,      // attitude loop (ωn ≈ 6 rad/s, ζ ≈ 0.8)
+  kpYaw: 6, kdYaw: 4
+};
+
+class FlightSim {
+  constructor(THREE, Phys) {
+    this.T = THREE; this.P = Phys;
+    this.wind = 0;                       // m/s, blowing toward +x/+z diagonal
+    this.history = [];
+    this.setVehicle(Phys.VEH.hex, Phys.DEFAULT_ENV);
+  }
+
+  /* Recompute mass, inertia and limits from the physics model */
+  setVehicle(veh, env) {
+    const P = this.P, V3 = this.T.Vector3;
+    this.veh = veh; this.env = Object.assign({}, env);
+    this.layout = P.layout(veh);
+    this.ev = P.evaluate(veh, env);
+    this.m = this.ev.mass.total;
+    this.fmax = this.ev.fmax.f;
+    this.k = this.ev.kyaw;
+    // Inertia: rotor assemblies as point masses at the rotor positions, the rest as a compact core.
+    const it = this.ev.mass.items;
+    const mRot = (it.motors + it.esc + it.props + it.arms) / veh.n;
+    const mCore = this.m - mRot * veh.n;
+    let Ix = mCore * 0.05, Iz = mCore * 0.05, Iy = mCore * 0.045;   // core radius of gyration ≈ 0.22 m (ASSUMED)
+    for (const r of this.layout) { Ix += mRot * r.z * r.z; Iz += mRot * r.x * r.x; Iy += mRot * (r.x * r.x + r.z * r.z); }
+    this.I = new V3(Ix, Iy, Iz);
+    this.contacts = [[0.42, -1, 0.6], [-0.42, -1, 0.6], [0.42, -1, -0.6], [-0.42, -1, -0.6]]
+      .map(p => new V3(p[0], -SimCfg.skidH, p[2]));
+    this.reset();
+  }
+
+  reset() {
+    const T = this.T;
+    this.t = 0;
+    this.pos = new T.Vector3(0, SimCfg.skidH, 0);
+    this.vel = new T.Vector3();
+    this.q = new T.Quaternion();
+    this.w = new T.Vector3();                       // body angular velocity, rad/s
+    this.f = new Array(this.veh.n).fill(0);         // actual rotor thrust, N
+    this.fc = new Array(this.veh.n).fill(0);        // commanded rotor thrust, N
+    this.failed = new Set(); this.tFail = new Map();
+    this.armed = false; this.mode = 'idle';
+    this.altCmd = SimCfg.skidH; this.holdX = 0; this.holdZ = 0; this.yawCmd = 0;
+    this.u = { fwd: 0, right: 0, up: 0, yaw: 0 };
+    this.crashed = false; this.touch = 0; this.energyWh = 0; this.power = 0;
+    this.history.length = 0; this._hAcc = 0; this.events = [];
+    this.log('Ready on the pad');
+  }
+
+  log(msg) { this.events.push({ t: this.t, msg }); if (this.events.length > 30) this.events.shift(); }
+
+  /* ---- commands ---- */
+  setInputs(u) { Object.assign(this.u, u); }
+  command(mode) {
+    if (this.crashed) return;
+    if (mode === 'takeoff') { this.armed = true; this.mode = 'takeoff'; this.altCmd = SimCfg.skidH + 20; this.holdX = this.pos.x; this.holdZ = this.pos.z; this.yawCmd = this._yaw(); this.log('Takeoff to 20 m'); }
+    else if (mode === 'hover') { if (!this.armed) return; this.mode = 'hover'; this.altCmd = this.pos.y; this.holdX = this.pos.x; this.holdZ = this.pos.z; this.log('Hover, position hold'); }
+    else if (mode === 'forward') { if (!this.armed) return; this.mode = 'forward'; this.altCmd = this.pos.y; this.log('Forward flight'); }
+    else if (mode === 'land') { if (!this.armed) return; this.mode = 'land'; this.holdX = this.pos.x; this.holdZ = this.pos.z; this.log('Landing'); }
+  }
+  failMotor(i) {
+    if (i < 0 || i >= this.veh.n || this.failed.has(i)) return;
+    this.failed.add(i); this.tFail.set(i, this.t);
+    this.log('Motor M' + (i + 1) + ' failed');
+  }
+  restoreMotors() { this.failed.clear(); this.tFail.clear(); this.log('Motors restored'); }
+  detected() { const out = []; this.failed.forEach(i => { if (this.t - this.tFail.get(i) >= SimCfg.fdiDelay) out.push(i); }); return out; }
+
+  _yaw() { const f = new this.T.Vector3(0, 0, -1).applyQuaternion(this.q); return Math.atan2(-f.x, -f.z); }
+  _wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
+
+  /* ---- one fixed physics step ---- */
+  step() {
+    const T = this.T, V3 = T.Vector3, dt = SimCfg.dt, g = this.P.G0, m = this.m;
+    const atm = this.P.isa(this.env.h + Math.max(this.pos.y - SimCfg.skidH, 0), this.env.dT);
+    this.t += dt;
+
+    /* 1. Guidance: stick and mode → desired velocity */
+    const u = this.u, yaw = this._yaw();
+    if (!this.armed && u.up > 0.2 && !this.crashed) { this.command('takeoff'); this.mode = 'manual'; this.altCmd = this.pos.y; }
+    if (Math.abs(u.yaw) > 0.05) this.yawCmd -= u.yaw * 1.0 * dt;       // right stick = turn right = decreasing yaw angle
+    else if (!this.armed) this.yawCmd = yaw;
+    const cy = Math.cos(this.yawCmd), sy = Math.sin(this.yawCmd);
+    const fwdD = new V3(-sy, 0, -cy), rightD = new V3(cy, 0, -sy);
+    const manualH = Math.abs(u.fwd) > 0.05 || Math.abs(u.right) > 0.05;
+    const vd = new V3();
+    if (this.mode === 'forward' && !manualH) vd.copy(fwdD).multiplyScalar(8);
+    if (manualH) { vd.addScaledVector(fwdD, u.fwd * SimCfg.vMax).addScaledVector(rightD, u.right * SimCfg.vMax); this.holdX = this.pos.x; this.holdZ = this.pos.z; if (this.mode !== 'land') this.mode = 'manual'; }
+    else if (this.mode !== 'forward') {
+      if (this.mode === 'manual' || this.mode === 'idle') { this.holdX = this.pos.x + this.vel.x * 0.8; this.holdZ = this.pos.z + this.vel.z * 0.8; if (this.armed) this.mode = this.mode === 'idle' ? 'idle' : 'hover'; }
+      vd.set(THREE_clamp(1.0 * (this.holdX - this.pos.x), 3), 0, THREE_clamp(1.0 * (this.holdZ - this.pos.z), 3));
+    }
+    // vertical
+    let vyd;
+    if (Math.abs(u.up) > 0.05) { vyd = u.up * SimCfg.climbMax; this.altCmd = this.pos.y; if (this.mode === 'idle') this.mode = 'manual'; }
+    else if (this.mode === 'land') { const agl = this.pos.y - SimCfg.skidH; vyd = -(agl > 4 ? 1.5 : 0.6); this.altCmd = this.pos.y; }
+    else vyd = THREE_clamp(1.2 * (this.altCmd - this.pos.y), SimCfg.climbMax);
+    if (this.mode === 'takeoff' && this.pos.y > this.altCmd - 0.4) { this.mode = 'hover'; this.altCmd = this.pos.y; this.holdX = this.pos.x; this.holdZ = this.pos.z; this.log('Hover reached'); }
+    vd.y = vyd;
+
+    /* 2. Velocity loop → desired thrust vector → desired attitude and collective */
+    const up = new V3(0, 1, 0).applyQuaternion(this.q);
+    const a = new V3(THREE_clamp(2.0 * (vd.x - this.vel.x), 4), THREE_clamp(3.0 * (vd.y - this.vel.y), 5), THREE_clamp(2.0 * (vd.z - this.vel.z), 4));
+    const Fd = new V3(m * a.x, m * (a.y + g), m * a.z);
+    const tilt = Math.atan2(Math.hypot(Fd.x, Fd.z), Fd.y), tiltMax = SimCfg.tiltMax * Math.PI / 180;
+    if (tilt > tiltMax) { const s = Math.tan(tiltMax) * Fd.y / Math.hypot(Fd.x, Fd.z); Fd.x *= s; Fd.z *= s; }
+    const bDes = Fd.clone().normalize();
+    let Tcmd = Math.max(Fd.dot(up), 0);
+
+    /* 3. Attitude loop → body torques */
+    const eW = new V3().crossVectors(up, bDes);
+    const eB = eW.applyQuaternion(this.q.clone().invert());
+    const I = this.I;
+    const tau = new V3(I.x * (SimCfg.kp * eB.x - SimCfg.kd * this.w.x), 0, I.z * (SimCfg.kp * eB.z - SimCfg.kd * this.w.z));
+    tau.y = I.y * (SimCfg.kpYaw * this._wrap(this.yawCmd - yaw) - SimCfg.kdYaw * this.w.y);
+
+    /* 4. Allocation (controller only knows about detected failures) */
+    const n = this.veh.n;
+    if (this.armed) {
+      const al = this.P.allocate(this.layout, this.detected(), [Tcmd, tau.x, tau.y, tau.z], this.fmax, this.k);
+      for (let i = 0; i < n; i++) this.fc[i] = al.f[i];
+    } else this.fc.fill(0);
+
+    /* 5. Motors: first-order lag; a failed motor loses thrust at once */
+    const alpha = 1 - Math.exp(-dt / SimCfg.motorTau);
+    let Ttot = 0, tauB = new V3(0, 0, 0), pw = 0;
+    for (let i = 0; i < n; i++) {
+      if (this.failed.has(i)) this.f[i] *= Math.exp(-dt / 0.03);
+      else this.f[i] += (this.fc[i] - this.f[i]) * alpha;
+      const r = this.layout[i], fi = this.f[i];
+      Ttot += fi; tauB.x += -r.z * fi; tauB.z += r.x * fi; tauB.y += r.s * this.k * fi;
+      pw += this.P.rotorPower(this.veh, atm, fi);
+    }
+    pw += this.armed ? this.veh.pAux : 0;
+    this.power = pw; this.energyWh += pw * dt / 3600;
+
+    /* 6. Forces */
+    const Fw = new V3(0, Ttot, 0).applyQuaternion(this.q);
+    Fw.y -= m * g;
+    const windV = new V3(this.wind * 0.7071, 0, this.wind * 0.7071);
+    const vrel = this.vel.clone().sub(windV), sp = vrel.length();
+    Fw.addScaledVector(vrel, -0.5 * atm.rho * SimCfg.cdA[this.veh.id] * sp);
+    // Skid contact: four spring-damper points with Coulomb-like friction
+    const ks = m * g / 4 / 0.005, cd = 0.6 * 2 * Math.sqrt(ks * m / 4);
+    const qInv = this.q.clone().invert(), wWorld = this._wWorld(); let touching = 0;
+    for (const c of this.contacts) {
+      const rw = c.clone().applyQuaternion(this.q), pwld = this.pos.clone().add(rw);
+      if (pwld.y >= 0) continue;
+      touching++;
+      const vp = this.vel.clone().add(new V3().crossVectors(wWorld, rw));
+      const Fy = Math.max(ks * (-pwld.y) - cd * vp.y, 0);
+      const vh = Math.hypot(vp.x, vp.z), Fmu = Math.min(0.6 * Fy, 2000 * vh);
+      const Fc = new V3(vh > 1e-6 ? -Fmu * vp.x / vh : 0, Fy, vh > 1e-6 ? -Fmu * vp.z / vh : 0);
+      Fw.add(Fc);
+      tauB.add(new V3().crossVectors(rw, Fc).applyQuaternion(qInv));
+    }
+    this.touch = touching;
+
+    /* 7. Integrate (semi-implicit Euler) */
+    const w = this.w, Iw = new V3(I.x * w.x, I.y * w.y, I.z * w.z), gyro = new V3().crossVectors(w, Iw);
+    const dw = new V3((tauB.x - gyro.x - SimCfg.angDamp * w.x) / I.x, (tauB.y - gyro.y - SimCfg.angDamp * w.y) / I.y, (tauB.z - gyro.z - SimCfg.angDamp * w.z) / I.z);
+    w.addScaledVector(dw, dt);
+    const ang = w.length() * dt;
+    if (ang > 1e-9) this.q.multiply(new T.Quaternion().setFromAxisAngle(w.clone().normalize(), ang)).normalize();
+    this.vel.addScaledVector(Fw, dt / m);
+    this.pos.addScaledVector(this.vel, dt);
+
+    /* 8. Landing, disarm and crash logic */
+    const tiltNow = Math.acos(Math.min(1, new V3(0, 1, 0).applyQuaternion(this.q).y)) * 180 / Math.PI;
+    if (touching > 0 && this.armed && !this.crashed) {
+      if (this._impact === undefined) this._impact = Math.abs(this.vel.y);
+      if (this.mode === 'land' && Math.abs(this.vel.y) < 0.3 && this.pos.y < SimCfg.skidH + 0.05) { this._landT = (this._landT || 0) + dt; if (this._landT > 1) { this.armed = false; this.mode = 'idle'; this._landT = 0; this.log('Landed, motors off'); } }
+      if (tiltNow > 70 && this.vel.length() < 2 && this.pos.y < 1) { this.crashed = true; this.armed = false; this.log('Airframe tipped over, reset to continue'); }
+    } else { this._landT = 0; }
+    if (this.pos.y > SimCfg.skidH + 1.5) this._impact = undefined;
+    if (this.pos.y < SimCfg.skidH - 0.2 || (touching > 0 && this.vel.y < -4)) { if (!this.crashed) { this.crashed = true; this.armed = false; this.fc.fill(0); this.log('Hard impact, reset to continue'); } }
+
+    this._hAcc += dt;
+    if (this._hAcc >= 0.05) { this._hAcc = 0; this.history.push({ t: this.t, f: this.f.slice(), fc: this.fc.slice(), failed: [...this.failed], det: this.detected().length > 0 }); if (this.history.length > 240) this.history.shift(); }
+  }
+
+  _wWorld() { return this.w.clone().applyQuaternion(this.q); }
+
+  advance(realDt) {
+    const steps = Math.min(Math.round(realDt / SimCfg.dt), 20);
+    for (let i = 0; i < steps; i++) this.step();
+  }
+
+  telemetry() {
+    const V3 = this.T.Vector3, up = new V3(0, 1, 0).applyQuaternion(this.q);
+    const yawDeg = ((-this._yaw() * 180 / Math.PI) % 360 + 360) % 360;
+    const usable = this.ev.usableWh;
+    return {
+      agl: Math.max(this.pos.y - SimCfg.skidH, 0), speed: Math.hypot(this.vel.x, this.vel.z), vs: this.vel.y,
+      tilt: Math.acos(Math.min(1, up.y)) * 180 / Math.PI, heading: yawDeg, power: this.power,
+      soc: Math.max(0, 1 - this.energyWh / usable) * 100, energyWh: this.energyWh,
+      mode: this.crashed ? 'down' : this.armed ? this.mode : 'on pad', armed: this.armed, crashed: this.crashed,
+      failed: [...this.failed], detected: this.detected(), wz: this.w.y * 180 / Math.PI
+    };
+  }
+}
+
+function THREE_clamp(x, lim) { return Math.max(-lim, Math.min(lim, x)); }
+if (typeof module !== 'undefined') module.exports = { FlightSim, SimCfg };
+
+/* ===== scene_mats.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · scene_mats.js
+   Procedural textures, PBR materials, sky dome, studio floor, terrain.
+   Everything is generated in code; nothing is downloaded.
+   ===================================================================== */
+function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function srgb(tex) { tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8; return tex; }
+
+/* 2x2 twill carbon-fibre weave */
+function carbonTexture() {
+  const c = mkCanvas(256, 256), g = c.getContext('2d'), s = 16;
+  g.fillStyle = '#101316'; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const horiz = ((x + y) % 4) < 2;
+    const gr = horiz ? g.createLinearGradient(x * s, 0, x * s + s, 0) : g.createLinearGradient(0, y * s, 0, y * s + s);
+    gr.addColorStop(0, '#2c3238'); gr.addColorStop(0.5, '#0c0f12'); gr.addColorStop(1, '#2a3036');
+    g.fillStyle = gr; g.fillRect(x * s + 1, y * s + 1, s - 2, s - 2);
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return srgb(t);
+}
+
+/* Scored aluminium: fine horizontal lines used as a bump map */
+function brushedBump() {
+  const c = mkCanvas(256, 256), g = c.getContext('2d');
+  g.fillStyle = '#808080'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 700; i++) { const v = 100 + Math.random() * 60 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(0, Math.random() * 256, 256, 1); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+
+function textTexture(w, h, draw) {
+  const c = mkCanvas(w, h), g = c.getContext('2d'); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.userData = { draw, w, h, c }; return srgb(t);
+}
+
+/* Medical pod decal: cross, wordmark and a technical data strip */
+function drawPodDecal(g, w, h) {
+  g.clearRect(0, 0, w, h);
+  const teal = '#0f9aa0';
+  g.fillStyle = teal; const a = h * 0.17, cx = h * 0.5, cy = h * 0.5;
+  g.fillRect(cx - a * 0.5, cy - a * 1.5, a, a * 3); g.fillRect(cx - a * 1.5, cy - a * 0.5, a * 3, a);
+  g.fillStyle = '#1b2a33'; g.font = '600 ' + h * 0.11 + 'px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+  g.fillText('MEDVAYU H6', h * 1.05, h * 0.36);
+  g.fillStyle = teal; g.font = '500 ' + h * 0.075 + 'px "IBM Plex Mono", monospace';
+  g.fillText('MODULAR MEDICAL POD', h * 1.05, h * 0.52);
+  g.fillStyle = '#5b6b75'; g.fillText('SLIDE-OUT CASSETTE · TOOL-FREE LATCH', h * 1.05, h * 0.66);
+}
+function podDecalTexture() { return textTexture(1024, 256, drawPodDecal); }
+
+function batteryTexture() {
+  return textTexture(512, 256, (g, w, h) => {
+    g.fillStyle = '#1d252b'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ff7a2f';
+    for (let i = -2; i < 12; i++) { g.beginPath(); g.moveTo(i * 44, h); g.lineTo(i * 44 + 22, h); g.lineTo(i * 44 + 54, h - 26); g.lineTo(i * 44 + 32, h - 26); g.fill(); }
+    g.fillStyle = '#e8eef1'; g.font = '600 34px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+    g.fillText('LI-ION PACK', 26, 54);
+    g.fillStyle = '#9fb0b9'; g.font = '500 20px "IBM Plex Mono", monospace';
+    g.fillText('2.4 kWh · 200 Wh/kg (assumed)', 26, 100);
+    g.fillText('COLD PLATE LOOP: MOTOR WASTE HEAT', 26, 134);
+  });
+}
+
+function crossTexture() {
+  return textTexture(128, 128, (g, w, h) => {
+    g.fillStyle = '#e9f6f6'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#0f9aa0'; g.fillRect(w * 0.4, h * 0.2, w * 0.2, h * 0.6); g.fillRect(w * 0.2, h * 0.4, w * 0.6, h * 0.2);
+  });
+}
+
+function numberSprite(n, color) {
+  const t = textTexture(64, 64, (g, w, h) => {
+    g.fillStyle = color; g.beginPath(); g.arc(32, 32, 28, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.font = '700 30px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('M' + n, 32, 34);
+  });
+  const m = new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true });
+  const s = new THREE.Sprite(m); s.scale.set(0.15, 0.15, 1); s.renderOrder = 10; return s;
+}
+
+function radialDiscTexture() {
+  const c = mkCanvas(128, 128), g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 8, 64, 64, 62);
+  gr.addColorStop(0, 'rgba(255,255,255,0.0)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.35)'); gr.addColorStop(0.95, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+}
+
+/* ---------- Materials ---------- */
+function makeMaterials() {
+  const carbonTex = carbonTexture();
+  const mat = {};
+  const cTex = (rx, ry) => { const t = carbonTex.clone(); t.needsUpdate = true; t.repeat.set(rx, ry); return t; };
+  mat.carbon = new THREE.MeshPhysicalMaterial({ map: cTex(3, 3), roughness: 0.38, metalness: 0.15, clearcoat: 0.9, clearcoatRoughness: 0.12 });
+  mat.carbonTube = new THREE.MeshPhysicalMaterial({ map: cTex(1, 8), roughness: 0.34, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.08 });
+  mat.carbonProp = new THREE.MeshPhysicalMaterial({ map: cTex(1, 2), color: 0xdfe5ea, roughness: 0.3, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide });
+  const bump = brushedBump();
+  mat.alu = new THREE.MeshStandardMaterial({ color: 0xb9c3ca, metalness: 1, roughness: 0.34, bumpMap: bump, bumpScale: 0.4 });
+  mat.aluDark = new THREE.MeshStandardMaterial({ color: 0x2d3943, metalness: 0.9, roughness: 0.42, bumpMap: bump, bumpScale: 0.3 });
+  mat.anodTeal = new THREE.MeshStandardMaterial({ color: 0x0f8f95, metalness: 0.85, roughness: 0.32 });
+  mat.anodOrange = new THREE.MeshStandardMaterial({ color: 0xff7a2f, metalness: 0.8, roughness: 0.35 });
+  mat.steel = new THREE.MeshStandardMaterial({ color: 0x59636b, metalness: 1, roughness: 0.28 });
+  mat.copper = new THREE.MeshStandardMaterial({ color: 0xc87941, metalness: 1, roughness: 0.28 });
+  mat.rubber = new THREE.MeshStandardMaterial({ color: 0x15191c, metalness: 0, roughness: 0.92 });
+  mat.pcb = new THREE.MeshStandardMaterial({ color: 0x0c5a3a, metalness: 0.2, roughness: 0.55 });
+  mat.gold = new THREE.MeshStandardMaterial({ color: 0xd9b24a, metalness: 1, roughness: 0.3 });
+  mat.podBody = new THREE.MeshPhysicalMaterial({ color: 0xf3f6f7, roughness: 0.28, metalness: 0.02, clearcoat: 1, clearcoatRoughness: 0.08 });
+  mat.glass = new THREE.MeshPhysicalMaterial({ color: 0x0d1c24, roughness: 0.05, metalness: 0.2, clearcoat: 1 });
+  mat.cassette = new THREE.MeshStandardMaterial({ color: 0x0f9aa0, roughness: 0.45, metalness: 0.05 });
+  mat.battShell = new THREE.MeshStandardMaterial({ color: 0x232c33, roughness: 0.55, metalness: 0.2 });
+  mat.battLabel = new THREE.MeshStandardMaterial({ map: batteryTexture(), roughness: 0.6, metalness: 0.1 });
+  mat.podDecal = new THREE.MeshBasicMaterial({ map: podDecalTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  mat.crossFace = new THREE.MeshStandardMaterial({ map: crossTexture(), roughness: 0.5 });
+  mat.tubeHot = new THREE.MeshStandardMaterial({ color: 0xff7a2f, emissive: 0xff4d00, emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.3 });
+  mat.ledRed = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+  mat.ledGreen = new THREE.MeshBasicMaterial({ color: 0x2ee66b });
+  mat.ledWhite = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  mat.disc = new THREE.MeshBasicMaterial({ map: radialDiscTexture(), color: 0xcfd8de, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  // Plain hex colours are sRGB; the renderer works in linear light, so convert them once here.
+  for (const k in mat) { const x = mat[k]; if (k === 'disc') continue; if (x.color) x.color.convertSRGBToLinear(); if (x.emissive) x.emissive.convertSRGBToLinear(); }
+  // Cassette/pod redraw once the web font arrives
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { [mat.podDecal.map, mat.battLabel.map].forEach(t => { if (t.userData && t.userData.draw) { t.userData.draw(t.userData.c.getContext('2d'), t.userData.w, t.userData.h); t.needsUpdate = true; } }); });
+  return mat;
+}
+
+/* ---------- Sky dome ---------- */
+const SKY_THEMES = {
+  light: { top: '#7fa9c9', horizon: '#dfe9ef', ground: '#c7d2d8', fog: '#dfe9ef', sun: 0xfff3e0, sunI: 2.2, hemiI: 0.85, floor: '#e6edf1', exposure: 1.0 },
+  dark:  { top: '#05090d', horizon: '#1a2a35', ground: '#0e1519', fog: '#14212a', sun: 0xcfe3ff, sunI: 1.5, hemiI: 0.55, floor: '#111a20', exposure: 0.95 }
+};
+function makeSky() {
+  const geo = new THREE.SphereGeometry(900, 32, 16);
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, ground: { value: new THREE.Color() } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 horizon; uniform vec3 ground; varying vec3 vP;' +
+      'void main(){ float h = vP.y; vec3 c = h>0.0 ? mix(horizon, top, pow(clamp(h,0.0,1.0),0.55)) : mix(horizon, ground, pow(clamp(-h*3.0,0.0,1.0),0.6)); gl_FragColor = vec4(c,1.0); }'
+  });
+  const m = new THREE.Mesh(geo, mat); m.renderOrder = -10; return m;
+}
+function applySky(sky, theme) {
+  const t = SKY_THEMES[theme];
+  sky.material.uniforms.top.value.set(t.top); sky.material.uniforms.horizon.value.set(t.horizon); sky.material.uniforms.ground.value.set(t.ground);
+}
+
+/* ---------- Studio floor: scaled measurement grid in metres ---------- */
+function studioFloorTexture(theme) {
+  const S = 1024, c = mkCanvas(S, S), g = c.getContext('2d'), dark = theme === 'dark';
+  const per = S / 8;                                         // 8 m across
+  g.clearRect(0, 0, S, S);
+  const rg = g.createRadialGradient(S / 2, S / 2, S * 0.05, S / 2, S / 2, S / 2);
+  rg.addColorStop(0, dark ? 'rgba(30,44,54,0.95)' : 'rgba(255,255,255,0.95)'); rg.addColorStop(0.7, dark ? 'rgba(20,32,40,0.6)' : 'rgba(236,242,245,0.6)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = rg; g.fillRect(0, 0, S, S);
+  for (let i = 0; i <= 80; i++) { const p = i * per / 10, major = i % 10 === 0, mid = i % 5 === 0; g.strokeStyle = dark ? (major ? 'rgba(130,170,190,0.5)' : mid ? 'rgba(130,170,190,0.22)' : 'rgba(130,170,190,0.09)') : (major ? 'rgba(40,80,100,0.45)' : mid ? 'rgba(40,80,100,0.2)' : 'rgba(40,80,100,0.08)'); g.lineWidth = major ? 2 : 1; g.beginPath(); g.moveTo(p, 0); g.lineTo(p, S); g.moveTo(0, p); g.lineTo(S, p); g.stroke(); }
+  // circular mask
+  g.globalCompositeOperation = 'destination-in';
+  const mk = g.createRadialGradient(S / 2, S / 2, S * 0.28, S / 2, S / 2, S / 2); mk.addColorStop(0, 'rgba(0,0,0,1)'); mk.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = mk; g.fillRect(0, 0, S, S);
+  const t = new THREE.CanvasTexture(c); t.flipY = false; return srgb(t);
+}
+
+/* ---------- Terrain texture and landing pad ---------- */
+function terrainTexture(theme) {
+  const c = mkCanvas(512, 512), g = c.getContext('2d'), dark = theme === 'dark';
+  g.fillStyle = dark ? '#18241d' : '#8aa07a'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = dark ? `rgba(${40 + v * 40 | 0},${60 + v * 40 | 0},${48 + v * 20 | 0},0.35)` : `rgba(${110 + v * 60 | 0},${135 + v * 50 | 0},${100 + v * 30 | 0},0.35)`; g.fillRect(Math.random() * 512, Math.random() * 512, 2 + Math.random() * 6, 2 + Math.random() * 4); }
+  g.strokeStyle = dark ? 'rgba(160,200,180,0.18)' : 'rgba(255,255,255,0.35)'; g.lineWidth = 2; g.strokeRect(1, 1, 510, 510);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(120, 120); return srgb(t);
+}
+function padTexture() {
+  const c = mkCanvas(512, 512), g = c.getContext('2d');
+  g.fillStyle = '#7d8890'; g.fillRect(0, 0, 512, 512);
+  g.strokeStyle = '#f4f7f8'; g.lineWidth = 14; g.beginPath(); g.arc(256, 256, 236, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = '#f4f7f8'; g.font = '700 300px "IBM Plex Sans", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('H', 256, 268);
+  return srgb(new THREE.CanvasTexture(c));
+}
+
+/* ===== model.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · model.js
+   Procedural drone geometry. buildDrone(veh, mats, layout) returns:
+     { group, parts, props[], leds[], labels[], explode(t), setPartVisible }
+   Axes: x right, y up, z back; nose points to −z. Units: metres.
+   Every mesh carries userData.partId so the UI can pick it with a ray.
+   ===================================================================== */
+const PART_ORDER = ['props', 'motors', 'arms', 'esc', 'thermal', 'frame', 'avionics', 'battery', 'pod', 'payload', 'latch', 'skids'];
+
+function buildDrone(veh, mats, layout) {
+  const V3 = THREE.Vector3, root = new THREE.Group();
+  const parts = {}; PART_ORDER.forEach(id => parts[id] = { id, objs: [] });
+  const props = [], leds = [], labels = [], discs = [];
+  const R = veh.propD / 2, ARM_IN = 0.20, hex = veh.n === 6;
+
+  /* ----- helpers ----- */
+  function shadowed(o) { o.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); return o; }
+  function reg(partId, obj, dir) {
+    obj.userData.base = obj.position.clone(); obj.userData.dir = dir ? dir.clone() : new V3();
+    obj.traverse(m => { m.userData.partId = partId; });
+    shadowed(obj); root.add(obj); parts[partId].objs.push(obj); return obj;
+  }
+  function between(a, b, radius, mat, seg = 10) {          // cylinder between two points
+    const d = b.clone().sub(a), len = d.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, len, seg), mat);
+    m.position.copy(a).addScaledVector(d, 0.5);
+    m.quaternion.setFromUnitVectors(new V3(0, 1, 0), d.normalize()); return m;
+  }
+  function ringMesh(r, tube, mat) { const m = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 10, 36), mat); m.rotation.x = Math.PI / 2; return m; }
+
+  /* ----- propeller blade: lofted lens-section airfoil with taper and twist ----- */
+  function bladeGeometry(Rt, hubR) {
+    const N = 16, M = 10, pos = [], idx = [];
+    const af = []; for (let i = 0; i < M; i++) { const a = i / M * Math.PI * 2, xc = Math.cos(a) * 0.5, yt = Math.sin(a) * 0.5 * 0.09 * (1 - Math.pow(Math.abs(Math.cos(a)), 6) * 0.2); af.push([xc, yt]); }
+    for (let s = 0; s <= N; s++) {
+      const u = s / N, r = hubR + (Rt - hubR) * u;
+      const chord = 0.085 * (1 - 0.62 * u) * (u < 0.12 ? 0.55 + u / 0.12 * 0.45 : 1);
+      const tw = (24 - 17 * u) * Math.PI / 180, droop = -0.02 * u * u;
+      for (const [xc, yt] of af) {
+        const cx = xc * chord, cy = yt * chord * 2.2;
+        pos.push(r, cx * Math.sin(tw) + cy * Math.cos(tw) + droop, cx * Math.cos(tw) - cy * Math.sin(tw));
+      }
+    }
+    for (let s = 0; s < N; s++) for (let i = 0; i < M; i++) { const a = s * M + i, b = s * M + (i + 1) % M, c = a + M, d = b + M; idx.push(a, c, b, b, c, d); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const uv = []; for (let s = 0; s <= N; s++) for (let i = 0; i < M; i++) uv.push(s / N, i / M); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    return g;
+  }
+  const bladeGeo = bladeGeometry(R, 0.05);
+
+  /* ===================== ARMS, MOTORS, PROPS, ESC, LEDS, THERMAL ===================== */
+  const hubPlate = new V3(0, 0.0, 0);
+  layout.forEach((r, i) => {
+    const dir = new V3(r.x, 0, r.z).normalize(), tip = new V3(r.x, 0, r.z);
+    const root0 = dir.clone().multiplyScalar(ARM_IN), len = tip.clone().sub(root0).length();
+
+    // Carbon arm tube with root clamp and tip motor-mount plate
+    const arm = new THREE.Group();
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, len, 20), mats.carbonTube);
+    tube.position.copy(root0).addScaledVector(dir, len / 2); tube.quaternion.setFromUnitVectors(new V3(0, 1, 0), dir); arm.add(tube);
+    const clamp = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.07, 20), mats.aluDark);
+    clamp.position.copy(root0).addScaledVector(dir, 0.04); clamp.quaternion.copy(tube.quaternion); arm.add(clamp);
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.012, 32), mats.alu);
+    plate.position.set(tip.x, 0.027, tip.z); arm.add(plate);
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.09, 20), mats.carbon);
+    sleeve.position.copy(tip).addScaledVector(dir, -0.04); sleeve.quaternion.copy(tube.quaternion); arm.add(sleeve);
+    reg('arms', arm, dir.clone().multiplyScalar(0.34));
+
+    // Motor: stator, rotating bell with cooling slots, shaft nut
+    const motor = new THREE.Group();
+    const stator = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.058, 0.03, 32), mats.aluDark); stator.position.y = 0.047; motor.add(stator);
+    const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.066, 0.052, 40), mats.anodTeal); bell.position.y = 0.088; motor.add(bell);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.066, 0.01, 40), mats.alu); cap.position.y = 0.119; motor.add(cap);
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; const sl = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.02, 0.004), mats.glass); sl.position.set(Math.cos(a) * 0.0665, 0.088, Math.sin(a) * 0.0665); sl.rotation.y = -a; motor.add(sl); }
+    const wind = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.007, 8, 28), mats.copper); wind.rotation.x = Math.PI / 2; wind.position.y = 0.066; motor.add(wind);
+    motor.position.set(tip.x, 0, tip.z);
+    reg('motors', motor, new V3(0, 0.52, 0));
+
+    // Propeller: hub, two blades, spinner and a motion-disc that fades in with RPM
+    const prop = new THREE.Group(), spin = new THREE.Group();
+    for (let b = 0; b < 2; b++) { const bl = new THREE.Mesh(bladeGeo, mats.carbonProp); bl.rotation.y = b * Math.PI; spin.add(bl); }
+    const hubM = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.026, 32), mats.anodTeal); spin.add(hubM);
+    const hubRing = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.004, 8, 24), mats.anodOrange); hubRing.rotation.x = Math.PI / 2; hubRing.position.y = 0.014; spin.add(hubRing);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.04, 24), mats.alu); cone.position.y = 0.032; spin.add(cone);
+    // tip colour marker so rotation reads at low speed: red on CW rotors, blue on CCW
+    const tipMat = new THREE.MeshBasicMaterial({ color: r.s > 0 ? 0xff3b30 : 0x2f8bff });
+    for (let b = 0; b < 2; b++) { const tp = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.004, 0.036), tipMat); tp.position.set((b ? -1 : 1) * (R - 0.025), 0.004, 0); spin.add(tp); }
+    prop.add(spin);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 48), mats.disc.clone()); disc.rotation.x = -Math.PI / 2; disc.position.y = 0.012; disc.castShadow = false; prop.add(disc);
+    prop.position.set(tip.x, 0.158, tip.z);
+    reg('props', prop, new V3(0, 0.95, 0)); disc.castShadow = false;
+    props.push({ spin, disc, dir: r.s }); discs.push(disc);
+
+    // Rotor label sprite above the prop (used by the flight sim and the labels view)
+    const sp = numberSprite(i + 1, '#0f8f95'); sp.position.set(tip.x, 0.46, tip.z); sp.visible = false; root.add(sp); labels.push(sp);
+
+    // ESC under the arm, near the motor
+    const esc = new THREE.Group();
+    const escBody = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.022, 0.05), mats.aluDark); esc.add(escBody);
+    const fins = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.006, 0.046), mats.alu); fins.position.y = -0.014; esc.add(fins);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.009, 12, 8), mats.ledGreen.clone()); led.position.set(0, 0.014, 0.02); esc.add(led); leds.push(led);
+    esc.position.copy(tip).addScaledVector(dir, -0.2); esc.position.y = -0.042; esc.rotation.y = Math.atan2(dir.x, dir.z) + Math.PI / 2;
+    reg('esc', esc, new V3(dir.x * 0.18, -0.46, dir.z * 0.18));
+
+    // Heat-collection loop: copper tube wraps the motor stator, then runs inward under the arm
+    if (veh.thermal) {
+      const th = new THREE.Group();
+      const ringT = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.008, 10, 32), mats.tubeHot); ringT.rotation.x = Math.PI / 2; ringT.position.set(tip.x, 0.035, tip.z); th.add(ringT);
+      const side = new V3(-dir.z, 0, dir.x).multiplyScalar(0.012);
+      const pts = [tip.clone().addScaledVector(dir, -0.058).setY(0.035), tip.clone().addScaledVector(dir, -0.12).setY(0.002), dir.clone().multiplyScalar(0.55).setY(-0.032), dir.clone().multiplyScalar(0.30).setY(-0.03), dir.clone().multiplyScalar(0.16).setY(0.03), new V3(0, 0.055, 0).addScaledVector(dir, 0.1)];
+      const c = new THREE.CatmullRomCurve3(pts.map(p => p.clone().add(side)));
+      th.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, 0.007, 8, false), mats.tubeHot));
+      reg('thermal', th, new V3(dir.x * 0.1, 0.30, dir.z * 0.1));
+    }
+
+    // Navigation / status LED on arm tip (green starboard, red port, white rear)
+    const nav = new THREE.Mesh(new THREE.SphereGeometry(0.011, 12, 8), r.x > 0.01 ? mats.ledGreen : r.x < -0.01 ? mats.ledRed : mats.ledWhite);
+    nav.position.set(tip.x + dir.x * 0.075, 0.03, tip.z + dir.z * 0.075); reg('arms', nav, dir.clone().multiplyScalar(0.34));
+  });
+
+  /* ===================== FRAME: sandwich plates, standoffs, arm clamps ===================== */
+  {
+    const hubR = hex ? 0.34 : 0.30;
+    const top = new THREE.Group();
+    const tp = new THREE.Mesh(new THREE.CylinderGeometry(hubR, hubR, 0.012, hex ? 6 : 8), mats.carbon); tp.rotation.y = Math.PI / 6; tp.position.y = 0.056; top.add(tp);
+    const tpe = ringMesh(hubR * 0.86, 0.004, mats.anodTeal); tpe.position.y = 0.063; top.add(tpe);
+    reg('frame', top, new V3(0, 0.34, 0));
+    const bot = new THREE.Group();
+    const bp = new THREE.Mesh(new THREE.CylinderGeometry(hubR, hubR, 0.012, hex ? 6 : 8), mats.carbon); bp.rotation.y = Math.PI / 6; bp.position.y = -0.056; bot.add(bp);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + Math.PI / 6, so = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.112, 12), mats.alu); so.position.set(Math.cos(a) * hubR * 0.78, 0, Math.sin(a) * hubR * 0.78); bot.add(so); }
+    reg('frame', bot, new V3(0, -0.04, 0));
+  }
+
+  /* ===================== AVIONICS: PDB, flight-controller stack, GPS mast ===================== */
+  {
+    const av = new THREE.Group();
+    const pdb = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.006, 0.26), mats.pcb); pdb.position.y = -0.032; av.add(pdb);
+    const pdbRing = ringMesh(0.1, 0.01, mats.copper); pdbRing.position.y = -0.026; av.add(pdbRing);
+    const fc = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.006, 0.17), mats.pcb); fc.position.y = -0.008; av.add(fc);
+    const fc2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.006, 0.15), mats.pcb); fc2.position.y = 0.018; av.add(fc2);
+    for (let k = 0; k < 5; k++) { const chip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.006, 0.03), mats.steel); chip.position.set(-0.05 + k * 0.025, -0.002, (k % 2 ? 0.03 : -0.03)); av.add(chip); }
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.17, 10), mats.alu); mast.position.set(0, 0.23, 0.17); av.add(mast);
+    const puck = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.02, 32), mats.podBody); puck.position.set(0, 0.325, 0.17); av.add(puck);
+    reg('avionics', av, new V3(0, 0.12, 0.0));
+  }
+
+  /* ===================== BATTERY (top-mounted) with cold plate ===================== */
+  {
+    const b = new THREE.Group();
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.14, 0.30), mats.battShell); b.add(shell);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.004, 0.28), mats.battLabel); lid.position.y = 0.072; b.add(lid);
+    for (const sx of [-0.14, 0.14]) { const st = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.146, 0.31), mats.rubber); st.position.x = sx; b.add(st); }
+    const hnd = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.007, 8, 20, Math.PI), mats.alu); hnd.position.set(0, 0.074, 0.1); b.add(hnd);
+    const xt = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.03), mats.gold); xt.position.set(0.27, 0, 0); b.add(xt);
+    b.position.y = 0.15; reg('battery', b, new V3(0, 0.78, 0));
+  }
+  if (veh.thermal) {
+    const cp = new THREE.Group();
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.012, 0.28), mats.alu); plate.position.y = 0.068; cp.add(plate);
+    const pump = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.05, 20), mats.anodOrange); pump.position.set(-0.2, 0.09, -0.19); pump.rotation.z = Math.PI / 2; cp.add(pump);
+    const man = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.008, 10, 32), mats.tubeHot); man.rotation.x = Math.PI / 2; man.position.y = 0.075; cp.add(man);
+    reg('thermal', cp, new V3(0, 0.42, 0));
+  }
+
+  /* ===================== MEDICAL POD (underslung) + cassette + latches ===================== */
+  const podLen = 0.92;
+  {
+    const prof = []; const Rp = 0.13;
+    for (let i = 0; i <= 28; i++) {
+      const y = -podLen / 2 + podLen * i / 28; let r;
+      if (y < -0.24) r = Rp * Math.sqrt(Math.max(0, 1 - Math.pow((y + 0.24) / 0.22, 2))); else if (y > 0.34) r = Rp * (1 - 0.18 * Math.pow((y - 0.34) / 0.12, 2)); else r = Rp;
+      prof.push(new THREE.Vector2(Math.max(r, 0.002), y));
+    }
+    const geo = new THREE.LatheGeometry(prof, 48); geo.rotateX(Math.PI / 2); geo.scale(1.55, 1, 1);
+    const pod = new THREE.Group();
+    const body = new THREE.Mesh(geo, mats.podBody); pod.add(body);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.06, 0.2), mats.glass); win.position.set(0.1985, 0.03, -0.28); pod.add(win); const win2 = win.clone(); win2.position.x = -0.2; pod.add(win2);
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.155), mats.podDecal); decal.position.set(0.2035, -0.03, 0.13); decal.rotation.y = Math.PI / 2; decal.scale.x = 0.8; pod.add(decal);
+    const decal2 = decal.clone(); decal2.position.x = -0.2035; decal2.rotation.y = -Math.PI / 2; pod.add(decal2);
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 10), mats.glass); nose.position.set(0, 0.005, -0.45); nose.scale.set(1.4, 1, 0.6); pod.add(nose);
+    const strobe = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 8), mats.ledWhite); strobe.position.set(0, -0.125, 0.3); pod.add(strobe);
+    pod.position.set(0, -0.215, 0); reg('pod', pod, new V3(0, -0.78, 0));
+
+    const cas = new THREE.Group();
+    const cb = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.17, 0.5), mats.cassette); cas.add(cb);
+    const ff = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.19, 0.02), mats.crossFace); ff.position.z = 0.26; cas.add(ff);
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.007, 8, 20, Math.PI), mats.alu); handle.position.set(0, 0, 0.275); handle.rotation.z = Math.PI; cas.add(handle);
+    for (let k = -1; k <= 1; k += 2) { const trg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.14), mats.podBody); trg.position.set(k * 0.07, 0.03, -0.1); cas.add(trg); }
+    cas.position.set(0, -0.215, 0.0); reg('payload', cas, new V3(0, -0.78, 0.95));
+
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const l = new THREE.Group();
+      const lb = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.045), mats.alu); l.add(lb);
+      const lp = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.08, 10), mats.steel); lp.position.y = -0.03; l.add(lp);
+      const lh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.016), mats.anodOrange); lh.position.set(0, -0.02, 0.03); l.add(lh);
+      l.position.set(sx * 0.16, -0.09, sz * 0.26); reg('latch', l, new V3(sx * 0.1, -0.4, sz * 0.2));
+    }
+  }
+
+  /* ===================== SKIDS ===================== */
+  for (const sx of [-1, 1]) {
+    const sk = new THREE.Group(), X = sx * 0.42, yb = -0.399;
+    const curve = new THREE.CatmullRomCurve3([new V3(X, -0.25, -0.76), new V3(X, -0.33, -0.70), new V3(X, yb + 0.003, -0.58), new V3(X, yb, -0.3), new V3(X, yb, 0.3), new V3(X, yb + 0.003, 0.58), new V3(X, -0.33, 0.70), new V3(X, -0.25, 0.76)]);
+    sk.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.014, 12, false), mats.carbonTube));
+    for (const sz of [-1, 1]) {
+      sk.add(between(new V3(sx * 0.30, -0.04, sz * 0.22), new V3(X, yb, sz * 0.44), 0.013, mats.carbonTube));
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.07, 14), mats.rubber); foot.rotation.z = Math.PI / 2; foot.position.set(X, yb + 0.005, sz * 0.6); foot.rotation.x = Math.PI / 2; sk.add(foot);
+      const brk = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.05), mats.aluDark); brk.position.set(sx * 0.30, -0.04, sz * 0.22); sk.add(brk);
+    }
+    reg('skids', sk, new V3(sx * 0.18, -0.95, 0));
+  }
+  // cross-tube linking the runners through the frame
+  { const xt = new THREE.Group(); [-0.2, 0.2].forEach(z => xt.add(between(new V3(-0.30, -0.04, z * 1.1), new V3(0.30, -0.04, z * 1.1), 0.011, mats.carbonTube))); reg('skids', xt, new V3(0, -0.95, 0)); }
+
+  /* ===================== API ===================== */
+  function explode(t) {
+    for (const id in parts) for (const o of parts[id].objs) o.position.copy(o.userData.base).addScaledVector(o.userData.dir, t);
+  }
+  // Anchor point of a part in model space (used for label leader lines)
+  function anchor(id) {
+    const box = new THREE.Box3(); parts[id].objs.forEach(o => box.expandByObject(o));
+    return box.getCenter(new V3());
+  }
+  function setPartVisible(id, v) { parts[id].objs.forEach(o => { o.visible = v; }); }
+  function setGhost(selectedId) {      // fade all parts except the selected one
+    root.traverse(m => { if (!m.isMesh || m.userData.partId === undefined) return; });
+  }
+
+  return { group: root, parts, props, leds, labels, discs, explode, anchor, setPartVisible, veh, R };
+}
+
+if (typeof module !== 'undefined') module.exports = { buildDrone, PART_ORDER };
+
+/* ===== app_data.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · app_data.js
+   Part descriptions, guided-tour script, assumption and 3DEXPERIENCE text.
+   Part masses are NOT stored here: they come from Phys.massBreakdown().
+   Materials and geometry are design choices for this concept, not tested data.
+   ===================================================================== */
+const PARTS = {
+  props: { name: 'Large low-RPM propellers', short: 'Props', color: '#38c6cf', mass: ['props'],
+    qty: v => v.n + ' (' + v.n / 2 + ' CW + ' + v.n / 2 + ' CCW)',
+    fn: 'Convert motor torque into thrust. Two-blade, tapered, twisted blades with the largest disk the arm layout allows.',
+    material: 'Carbon-fibre / epoxy blades, anodised aluminium hub (design choice).',
+    reason: 'Hover power scales with 1/√(disk area). A bigger disk lowers disk loading, so each newton of thrust costs less power, and the rotor turns slower, which keeps tip Mach moderate in thin air.' },
+  motors: { name: 'Low-KV outrunner motors', short: 'Motors', color: '#0a8189', mass: ['motors'],
+    qty: v => v.n,
+    fn: 'Drive the propellers directly (no gearbox). Each motor is a heat source that feeds the battery warming loop.',
+    material: 'Aluminium bell and stator carrier, copper windings, neodymium magnets (design choice).',
+    reason: 'A low-KV motor matches a large, slow propeller without a gearbox, which removes a failure point. Its winding loss becomes useful heat in cold air.' },
+  arms: { name: 'Carbon-fibre arms', short: 'Arms', color: '#3a4a56', mass: ['arms'],
+    qty: v => v.n,
+    fn: 'Hold each motor at the correct radius and carry thrust and torque loads into the frame.',
+    material: 'Carbon-fibre / epoxy tube, about 44 mm OD in this model, aluminium root clamps.',
+    reason: 'High stiffness-to-weight keeps the structure light. The arm radius is set so neighbouring props clear each other, and it also fixes the moment arms used by the motor-out controller.' },
+  esc: { name: 'Electronic speed controllers', short: 'ESCs', color: '#6a7a86', mass: ['esc'],
+    qty: v => v.n,
+    fn: 'Convert pack DC into three-phase drive for each motor. One per motor, so one failed ESC takes out one rotor only.',
+    material: 'Aluminium heat-spreader on a PCB (design choice).',
+    reason: 'One ESC per motor isolates faults. ESC losses are also heat that the thermal loop can collect.' },
+  thermal: { name: 'Waste-heat battery warming loop', short: 'Thermal loop', color: '#ff7a2f', mass: ['thermal'],
+    qty: v => v.thermal ? v.n + ' motor loops + 1 cold plate' : 'none',
+    fn: 'A liquid loop picks up heat from each motor and ESC, runs inward along the arms, and warms the battery through a cold plate. A bypass stops heating above 30 °C.',
+    material: 'Thin-wall tubing, aluminium cold plate, small circulation pump (design choice).',
+    reason: 'Li-ion capacity falls in cold air. At altitude the motors waste more power exactly when the air is coldest, so reusing that heat protects usable energy at almost no energy cost.' },
+  frame: { name: 'Carbon sandwich frame', short: 'Frame', color: '#1e2a33', mass: ['frame'],
+    qty: v => '2 plates + 6 standoffs',
+    fn: 'Central hub: joins arms, battery, avionics, pod latches and skids.',
+    material: 'Carbon-fibre plates, aluminium standoffs (design choice).',
+    reason: 'A twin-plate sandwich is stiff, light, easy to inspect and gives a clear mounting plane for the battery above and the pod below.' },
+  avionics: { name: 'Flight controller and sensors', short: 'Avionics', color: '#0c5a3a', mass: ['avionics'],
+    qty: v => '1 stack + GNSS mast',
+    fn: 'Estimates attitude, runs the position and attitude loops, detects a dead motor and re-allocates thrust across the healthy rotors.',
+    material: 'Multilayer PCBs in a vibration-isolated stack (design choice).',
+    reason: 'Motor-out tolerance is mostly software: the controller must know each rotor\'s position and limits to redistribute thrust within a fraction of a second.' },
+  battery: { name: 'Top-mounted battery pack', short: 'Battery', color: '#232c33', mass: ['battery'],
+    qty: v => '1',
+    fn: 'Stores the flight energy and supplies all six motors.',
+    material: 'Li-ion cells in a flame-retardant housing; pack-level 200 Wh/kg is an assumption.',
+    reason: 'On top, the pack stays in the clean air above the rotors, is easy to swap, and keeps the underside free for the pod. It also sits over the cold plate for direct warming.' },
+  pod: { name: 'Modular medical pod', short: 'Pod', color: '#e8eef1', mass: ['pod', 'latch'],
+    qty: v => '1 shell',
+    fn: 'Streamlined enclosure under the hub that holds a payload cassette and shields it from airflow and weather.',
+    material: 'Moulded composite shell with a polycarbonate window (design choice).',
+    reason: 'A standard pod interface lets the same aircraft carry blood products, an AED kit, medicines or a casualty-care kit. Mounting it low keeps the centre of gravity close to the rotor plane.' },
+  payload: { name: 'Payload cassette', short: 'Cassette', color: '#0f9aa0', mass: ['payload'],
+    qty: v => '1 slide-out unit',
+    fn: 'Carries the actual medical load. It slides out of the rear of the pod and can be loaded at the clinic while the aircraft is already on its next sortie.',
+    material: 'Insulated composite box (design choice). Payload mass is the "Payload" slider.',
+    reason: 'A cassette separates loading from flying: hospitals load it, the aircraft just carries it. Different cassettes can add cooling, oxygen or a sample-return tray.' },
+  latch: { name: 'Pod quick-release latches', short: 'Latches', color: '#ff7a2f', mass: [],
+    qty: v => '4',
+    fn: 'Lock the pod to the frame and release it by hand.',
+    material: 'Aluminium body with stainless pin (design choice).',
+    reason: 'Tool-free swapping is what makes the pod modular in practice. Four latches give a redundant load path. Their mass is included with the pod in the budget.' },
+  skids: { name: 'Carbon skid landing gear', short: 'Skids', color: '#3a4a56', mass: ['skids'],
+    qty: v => '2 runners + 4 struts',
+    fn: 'Support the aircraft on the ground and absorb touchdown loads on rough or sloped sites.',
+    material: 'Carbon-fibre tube runners and struts with rubber feet (design choice).',
+    reason: 'Skids are simpler and lighter than wheels or articulated legs and work on uneven ground. The wide stance gives rollover margin.' }
+};
+const PART_ORDER_UI = ['props', 'motors', 'arms', 'esc', 'thermal', 'frame', 'avionics', 'battery', 'pod', 'payload', 'latch', 'skids'];
+
+/* Order of pod-related mass: the budget has separate pod and latch items. */
+function partMass(id, mb) { return PARTS[id].mass.reduce((s, k) => s + (mb.items[k] || 0), 0); }
+
+/* ---------- Guided tour. html(ctx) returns the talking points with live numbers. ---------- */
+const f1 = x => x.toFixed(1), f0 = x => x.toFixed(0), f2 = x => x.toFixed(2);
+const TOUR = [
+  { title: 'The problem', stage: 'design', view: 'iso', explode: 0, select: null,
+    html: c => `<ul><li>The brief asks for a high-altitude electric aircraft for life-saving and transport work.</li>
+      <li>At <b>${f0(S.env.h)} m</b> standard-atmosphere air is <b>${f0(c.hex.atm.sigma * 100)}%</b> as dense as at sea level. Rotors make less thrust per rev.</li>
+      <li>Cold air also cuts battery capacity. A plain quad at the same point has about <b>${f0(c.quad.batt.f * 100)}%</b> of rated capacity, in this model.</li></ul>` },
+  { title: 'Our answer: MedVayu H6', stage: 'design', view: 'iso', explode: 0, select: null,
+    html: c => `<ul><li>Hexacopter, six large carbon props, skid gear.</li><li>Battery on top, modular medical pod underneath.</li>
+      <li>Three innovations: <b>large low-RPM props</b>, <b>battery warmed by motor waste heat</b>, <b>motor-out fault tolerance</b>.</li>
+      <li>All-up mass in this model: <b>${f1(c.hex.mass.total)} kg</b> with ${f0(S.env.payload)} kg of payload.</li></ul>` },
+  { title: 'Anatomy', stage: 'design', view: 'iso', explode: 1, select: null, labels: true,
+    html: c => `<ul><li>Drag the Exploded slider. Every part has a label; tap one for its function, material, mass and design reason.</li>
+      <li>Mass budget total: <b>${f1(c.hex.mass.total)} kg</b>. Battery is the largest single item at <b>${f1(c.hex.mass.items.battery)} kg</b>.</li></ul>` },
+  { title: 'Large low-RPM propellers', stage: 'design', view: 'front', explode: 0.55, select: 'props',
+    html: c => `<ul><li>Prop diameter <b>${f0(c.hex.v.propD * 1000)} mm</b> against <b>${f0(c.quad.v.propD * 1000)} mm</b> on the reference quad.</li>
+      <li>Disk loading <b>${f1(c.hex.DL)} N/m²</b> against <b>${f1(c.quad.DL)}</b>.</li>
+      <li>Hover power in this model: <b>${f0(c.hex.Ptot)} W</b> against <b>${f0(c.quad.Ptot)} W</b>.</li>
+      <li>Hover speed <b>${f0(c.hex.rpm)} rpm</b>, tip Mach <b>${f2(c.hex.mach)}</b>.</li></ul>` },
+  { title: 'Battery warmed by waste heat', stage: 'design', view: 'iso', explode: 0.7, select: 'thermal',
+    html: c => `<ul><li>Heat from motors and ESCs is carried along the arms to a cold plate under the battery.</li>
+      <li>Ambient <b>${f1(c.hex.atm.Tc)} °C</b>. Pack temperature with the loop: <b>${f1(c.hex.batt.Tcell)} °C</b>; without: <b>${f1(c.hexNoTM.batt.Tcell)} °C</b>.</li>
+      <li>Usable capacity factor <b>${f2(c.hex.batt.f)}</b> against <b>${f2(c.hexNoTM.batt.f)}</b>. That is <b>${f1(c.hex.endurance)} min</b> against <b>${f1(c.hexNoTM.endurance)} min</b> of hover.</li>
+      <li>Depends on an assumed ${f0(Phys.A.capture * 100)}% heat capture. We will verify it in thermal simulation.</li></ul>` },
+  { title: 'Motor-out fault tolerance', stage: 'compare', view: 'iso', explode: 0, select: null, race: true,
+    html: c => `<ul><li>The race on the stage fails motor 1 on both aircraft at the same moment.</li>
+      <li>The hexacopter has six rotors. With one gone the controller shifts thrust to the other five and holds hover.</li>
+      <li>Needs <b>${f1(c.hex.mo.fReq)} N</b> from the busiest rotor against <b>${f1(c.hex.fmax.f)} N</b> available (margin <b>${f2(c.hex.mo.margin)}×</b>).</li>
+      <li>The four-rotor reference cannot cancel yaw and roll together after a failure. In the sim it tumbles.</li></ul>` },
+  { title: 'Modular medical pod', stage: 'design', view: 'side', explode: 0.8, select: 'payload',
+    html: c => `<ul><li>One standard pod, swappable cassettes: blood products, AED kit, medicines, sample return.</li>
+      <li>Cassette slides out of the rear and is loaded while the aircraft flies another sortie.</li>
+      <li>Four tool-free latches hold the pod. Payload in this model: <b>${f0(S.env.payload)} kg</b>.</li></ul>` },
+  { title: 'Altitude performance', stage: 'design', view: 'iso', explode: 0, select: null, tab: 'physics',
+    html: c => `<ul><li>Charts on the right update with the sliders: endurance and thrust margin against altitude.</li>
+      <li>At <b>${f0(S.env.h)} m</b>: thrust-to-weight <b>${f2(c.hex.TW)}</b>, motor-out needs <b>${f2(c.hex.mo.fReq * c.hex.v.n / c.hex.Wt)}</b>.</li>
+      <li>Move the altitude slider to see where the margin runs out.</li></ul>` },
+  { title: 'Why not a plain quad?', stage: 'compare', view: 'iso', explode: 0, select: null, tab: 'compare',
+    html: c => `<ul><li>Hover power <b>${f0((1 - c.hex.Ptot / c.quad.Ptot) * 100)}%</b> lower.</li>
+      <li>Endurance <b>${f1(c.hex.endurance)} min</b> against <b>${f1(c.quad.endurance)} min</b> at ${f0(S.env.h)} m.</li>
+      <li>Thrust-to-weight <b>${f2(c.hex.TW)}</b> against <b>${f2(c.quad.TW)}</b>.</li>
+      <li>Hex survives a motor loss: <b>${c.hex.mo.status === 'ok' ? 'yes' : 'no'}</b>. Quad: <b>${c.quad.mo.status === 'ok' ? 'yes' : 'no'}</b>.</li></ul>` },
+  { title: 'Validation plan', stage: 'design', view: 'iso', explode: 0.4, select: null, tab: 'notes',
+    html: c => `<ul><li>This page is a concept calculator with stated assumptions. It is not a certified performance claim.</li>
+      <li>Next, in 3DEXPERIENCE: model the parts, run structural, thermal and flow studies, then replace each assumption with a simulated or datasheet value.</li>
+      <li>The Notes tab lists every assumption and the modelling plan.</li></ul>` }
+];
+
+/* ---------- Notes: assumptions (values read live from the model) and the 3DEXPERIENCE plan ---------- */
+function assumptionRows() {
+  const A = Phys.A;
+  return [
+    ['Atmosphere', 'ISA troposphere (0–11 km). ΔT shifts temperature only; pressure stays on the ISA profile.', 'standard'],
+    ['Figure of merit FM', A.FM + ' in hover for all rotors', 'assumed'],
+    ['Thrust coefficient CT', A.CT + ' (sets hover rpm and tip speed)', 'assumed'],
+    ['Motor / ESC efficiency', (A.etaMotor * 100) + '% / ' + (A.etaEsc * 100) + '%', 'assumed'],
+    ['Per-motor power limit', A.pMotorMax + ' W continuous', 'assumed'],
+    ['Tip Mach limit', A.machTipMax, 'assumed'],
+    ['Pack specific energy', A.battSpecEnergy + ' Wh/kg at pack level', 'assumed'],
+    ['Usable depth of discharge', (A.dod * 100) + '% (20% reserve)', 'assumed'],
+    ['Cold capacity loss', (A.capSlope * 100).toFixed(2) + '% per °C below 25 °C, floor ' + (A.capFloor * 100) + '%', 'assumed'],
+    ['Heat captured by loop', (A.capture * 100) + '% of motor + ESC loss; pack insulated conductance ' + A.UAins + ' W/K, uninsulated ' + A.UAopen + ' W/K; bypass above ' + A.TcellMax + ' °C', 'assumed'],
+    ['Component masses', 'Per-part masses in physics.js (frame, arms, motors 0.85 kg, ESC 0.15 kg, props, pod 2.2 kg, ...)', 'assumed'],
+    ['Reference quad', '610 mm props, 4 motors, same battery, same pod and payload, no warming loop', 'assumed'],
+    ['Hover only', 'Endurance uses hover power. Forward-flight power, climb, wind and reserve policy are not modelled.', 'limit'],
+    ['Rotor aerodynamics', 'Momentum theory with a constant figure of merit. No blade-element, ground effect, or rotor-rotor interference.', 'limit'],
+    ['Battery', 'No voltage sag, no rate-dependent capacity, no ageing. Temperature is a steady-state estimate.', 'limit'],
+    ['Motor-out', 'Control allocation on a rigid body. Failure detected after 0.2 s. Motor response lag 0.06 s. Yaw is sacrificed first.', 'assumed'],
+    ['Flight sim', 'Rigid body, quadratic drag, spring-damper skids. Speed and tilt limits are sim limits, not performance claims.', 'limit']
+  ];
+}
+const PLAN_3DX = [
+  ['Parts and assembly', 'Model every part in the Parts view with the materials shown here; assemble with arm, battery and pod constraints; add motion for pod slide-out and an exploded drawing.'],
+  ['Mass properties', 'Assign materials, read mass, centre of gravity and inertia, compare against the budget; check CG stays inside the skid footprint with each payload.'],
+  ['Structural (arm and frame)', 'Static analysis of an arm with thrust and torque at the motor mount; frame under hover and under the motor-out load case; skid drop load.'],
+  ['Thermal', 'Steady and transient study of motor and ESC heat into the loop and cold plate at cold-air conditions; check the 30 °C bypass behaviour.'],
+  ['Fluid flow (CFD)', 'Flow around the pod and arms in hover downwash; prop-to-arm clearance; check the battery sits outside prop wake.'],
+  ['Fatigue / vibration', 'Modal analysis of the arm with motor mass to keep the first mode away from rotor rpm.'],
+  ['Validation and justification', 'Replace every ASSUMED value with a simulated or datasheet value; keep a table of assumption, source and result.']
+];
+
+/* ===== app_scene.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · app_scene.js
+   Renderer, lighting, image-based reflections, studio floor, terrain world,
+   drone rigs (model + simulation), camera tweening, picking, render loop.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const L = hex => new THREE.Color(hex).convertSRGBToLinear();
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+/* ---------- global app state ---------- */
+const S = {
+  theme: 'light', tab: 'design', stage: 'design', env: Object.assign({}, Phys.DEFAULT_ENV, { h: 4000 }),
+  explode: 0, selected: null, labels: false, wire: false, spin: true, hidden: new Set(),
+  flightVeh: 'hex', wind: 0, running: true, tourStep: -1, hooks: []
+};
+const W = { stage: $('#stage'), canvas: null, renderer: null, scene: null, camera: null, controls: null };
+
+/* ---------- renderer, scene, camera ---------- */
+(function initRenderer() {
+  const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  r.outputEncoding = THREE.sRGBEncoding; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0;
+  r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+  W.stage.insertBefore(r.domElement, W.stage.firstChild); W.canvas = r.domElement; W.renderer = r;
+  W.scene = new THREE.Scene();
+  W.camera = new THREE.PerspectiveCamera(38, 1, 0.05, 4000);
+  W.camera.position.set(2.9, 1.7, -3.9);
+  W.controls = new THREE.OrbitControls(W.camera, W.canvas);
+  Object.assign(W.controls, { enableDamping: true, dampingFactor: 0.08, minDistance: 0.8, maxDistance: 60, maxPolarAngle: Math.PI * 0.495, rotateSpeed: 0.7, zoomSpeed: 0.8, screenSpacePanning: true });
+  W.controls.target.set(0, 0.45, 0);
+})();
+
+const MATS = makeMaterials();
+const sky = makeSky(); W.scene.add(sky);
+
+/* ---------- lights ---------- */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8899a0, 0.8); W.scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 2); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
+W.scene.add(sun, sun.target);
+const rim = new THREE.DirectionalLight(0x9fd8ff, 0.7); rim.position.set(-6, 3, -8); W.scene.add(rim);
+function setShadowBox(half, near, far) { const c = sun.shadow.camera; c.left = -half; c.right = half; c.top = half; c.bottom = -half; c.near = near; c.far = far; c.updateProjectionMatrix(); }
+const SUNDIR = new THREE.Vector3(0.45, 0.8, 0.38).normalize();
+
+/* ---------- reflections: PMREM of a sky plus soft-boxes ---------- */
+let pmrem = new THREE.PMREMGenerator(W.renderer), envRT = null;
+function buildEnv(theme) {
+  const t = SKY_THEMES[theme], es = new THREE.Scene();
+  const dome = makeSky(); applySky(dome, theme); es.add(dome);
+  const box = (w, h, pos, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide })); m.position.copy(pos); m.lookAt(0, 0, 0); es.add(m); };
+  const k = theme === 'dark' ? 2.2 : 3.6;
+  box(30, 6, new THREE.Vector3(0, 30, 0), k); box(4, 26, new THREE.Vector3(26, 10, 6), k * 0.8); box(4, 22, new THREE.Vector3(-24, 8, -10), k * 0.5); box(26, 3, new THREE.Vector3(0, 6, 30), k * 0.35);
+  if (envRT) envRT.dispose();
+  envRT = pmrem.fromScene(es, 0.02); W.scene.environment = envRT.texture;
+  es.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+}
+
+/* ---------- studio floor ---------- */
+const studio = new THREE.Group(); W.scene.add(studio);
+const floorMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
+const floor = new THREE.Mesh(new THREE.CircleGeometry(6.2, 64), floorMat); floor.rotation.x = -Math.PI / 2; floor.position.y = 0.002; floor.renderOrder = -1; studio.add(floor);
+const shadowCatch = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.28 })); shadowCatch.rotation.x = -Math.PI / 2; shadowCatch.position.y = 0.004; shadowCatch.receiveShadow = true; studio.add(shadowCatch);
+function setStudioTheme(theme) { if (floorMat.map) floorMat.map.dispose(); floorMat.map = studioFloorTexture(theme); floorMat.needsUpdate = true; }
+
+/* ---------- terrain world (flight view) ---------- */
+const world = new THREE.Group(); world.visible = false; W.scene.add(world);
+const WORLD = { windsock: null, dust: null, trees: null, ground: null };
+function hash2(x, y) { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); return lerp(lerp(hash2(xi, yi), hash2(xi + 1, yi), u), lerp(hash2(xi, yi + 1), hash2(xi + 1, yi + 1), u), v); }
+function fbm(x, y, o = 5) { let a = 0.5, f = 1, s = 0; for (let i = 0; i < o; i++) { s += a * vnoise(x * f, y * f); f *= 2.03; a *= 0.5; } return s; }
+function terrainH(x, z) {
+  const d = Math.hypot(x, z), flat = clamp((d - 28) / 60, 0, 1), flat2 = flat * flat * (3 - 2 * flat);
+  const rolling = (fbm(x * 0.006, z * 0.006, 4) - 0.35) * 22;
+  const far = clamp((d - 220) / 700, 0, 1), ridge = 1 - Math.abs(fbm(x * 0.0022 + 9, z * 0.0022 - 4, 5) * 2 - 1);
+  const mount = far * far * (Math.pow(ridge, 1.6) * 520 + fbm(x * 0.01, z * 0.01, 3) * 60);
+  return (rolling + mount) * flat2;
+}
+function buildWorld(theme) {
+  while (world.children.length) { const c = world.children.pop(); c.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
+  const N = 200, SZ = 3000, geo = new THREE.PlaneGeometry(SZ, SZ, N, N); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position, col = new Float32Array(p.count * 3), dark = theme === 'dark';
+  const cGrass = L(dark ? 0x2a3f31 : 0x6f8f5c), cDry = L(dark ? 0x3d3f36 : 0x9c9170), cRock = L(dark ? 0x56606a : 0x80858a), cSnow = L(dark ? 0xc4d2de : 0xf4f7fa), tmp = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), h = terrainH(x, z); p.setY(i, h);
+    const n = fbm(x * 0.02, z * 0.02, 3);
+    tmp.copy(cGrass).lerp(cDry, clamp(n * 1.2 + h / 90 - 0.2, 0, 1)).lerp(cRock, clamp((h - 90) / 120, 0, 1)).lerp(cSnow, clamp((h - 260 + n * 80) / 70, 0, 1));
+    col[i * 3] = tmp.r; col[i * 3 + 1] = tmp.g; col[i * 3 + 2] = tmp.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 })); ground.receiveShadow = true; world.add(ground); WORLD.ground = ground;
+  // Landing pad with perimeter lights
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(4, 48), new THREE.MeshStandardMaterial({ map: padTexture(), roughness: 0.85 })); pad.rotation.x = -Math.PI / 2; pad.position.y = 0.02; pad.receiveShadow = true; world.add(pad);
+  const ledM = new THREE.MeshBasicMaterial({ color: L(0xffb347) });
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, l = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), ledM); l.position.set(Math.cos(a) * 4.15, 0.07, Math.sin(a) * 4.15); world.add(l); }
+  // Trees (instanced cone + trunk) on low, gentle ground
+  const treeN = 520, trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.26, 2, 6), new THREE.MeshStandardMaterial({ color: L(dark ? 0x2a1f18 : 0x5a4130), roughness: 1 }), treeN);
+  const crown = new THREE.InstancedMesh(new THREE.ConeGeometry(1.5, 6, 7), new THREE.MeshStandardMaterial({ color: L(dark ? 0x153a26 : 0x2f6b3f), roughness: 0.9 }), treeN);
+  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3(); let k = 0;
+  for (let i = 0; i < 6000 && k < treeN; i++) {
+    const a = hash2(i, 1.7) * Math.PI * 2, d = 22 + Math.pow(hash2(i, 9.1), 0.7) * 380, x = Math.cos(a) * d, z = Math.sin(a) * d, h = terrainH(x, z);
+    if (h > 55 || fbm(x * 0.012, z * 0.012, 3) < 0.5) continue;
+    const s = 0.7 + hash2(i, 3.3) * 1.1; sc.set(s, s, s); ps.set(x, h + 1 * s, z); M.compose(ps, q, sc); trunk.setMatrixAt(k, M);
+    ps.set(x, h + 4.2 * s, z); M.compose(ps, q, sc); crown.setMatrixAt(k, M); k++;
+  }
+  trunk.count = crown.count = k; trunk.castShadow = crown.castShadow = true; world.add(trunk, crown);
+  // Windsock
+  const ws = new THREE.Group(), pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 4.5, 8), MATS.alu); pole.position.y = 2.25; ws.add(pole);
+  const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.1, 1.6, 16, 1, true), new THREE.MeshStandardMaterial({ color: L(0xff7a2f), side: THREE.DoubleSide, roughness: 0.8 }));
+  sock.geometry.translate(0, -0.8, 0); const hinge = new THREE.Group(); hinge.add(sock); const sockPivot = new THREE.Group(); sockPivot.position.y = 4.4; sockPivot.rotation.y = -Math.PI / 4; sockPivot.add(hinge); ws.add(sockPivot); ws.position.set(7, 0, -6); ws.traverse(o => { if (o.isMesh) o.castShadow = true; }); world.add(ws); WORLD.windsock = hinge;
+  // Rotor-wash dust
+  const dg = new THREE.BufferGeometry(), dn = 360; dg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dn * 3), 3));
+  const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: L(dark ? 0x8fa0a8 : 0xc9bda5), size: 0.35, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true })); dust.frustumCulled = false; world.add(dust);
+  WORLD.dust = { pts: dust, n: dn, seed: new Float32Array(dn * 2).map((_, i) => hash2(i, 5.5)) };
+}
+
+/* ---------- drone rigs ---------- */
+const DRONES = {};
+for (const id of ['hex', 'quad']) { const veh = Phys.VEH[id], d = buildDrone(veh, MATS, Phys.layout(veh)); DRONES[id] = d; W.scene.add(d.group); d.discs.forEach(x => { x.raycast = () => { }; }); d.labels.forEach(l => { l.raycast = () => { }; }); }
+DRONES.quad.group.visible = false;
+
+const sim = new FlightSim(THREE, Phys);                       // main rig, hex or quad
+const sim2 = new FlightSim(THREE, Phys);                      // second rig for the compare race
+let simCmp = { on: false, tFail: null };
+const trail = (() => { const g = new THREE.BufferGeometry(), a = new Float32Array(900 * 3); g.setAttribute('position', new THREE.BufferAttribute(a, 3)); g.setDrawRange(0, 0); const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xff7a2f })); l.frustumCulled = false; l.visible = false; W.scene.add(l); return { line: l, a, n: 0, last: new THREE.Vector3(1e9, 0, 0) }; })();
+function pushTrail(p) { if (trail.last.distanceToSquared(p) < 0.04) return; trail.last.copy(p); if (trail.n >= 900) { trail.a.copyWithin(0, 3); trail.n = 899; } trail.a.set([p.x, p.y, p.z], trail.n * 3); trail.n++; trail.line.geometry.setDrawRange(0, trail.n); trail.line.geometry.attributes.position.needsUpdate = true; }
+function clearTrail() { trail.n = 0; trail.line.geometry.setDrawRange(0, 0); trail.last.set(1e9, 0, 0); }
+
+let spinPhase = 0;
+function spinProps(drone, forces, hoverF, dt, always) {
+  for (let i = 0; i < drone.props.length; i++) {
+    const pr = drone.props[i], f = forces ? forces[i] : hoverF, k = clamp(f / hoverF, 0, 1.8);
+    const w = always ? 16 * Math.sqrt(k) : 12;            // visual rad/s, scaled so rotation stays readable at 60 fps
+    pr.spin.rotation.y += pr.dir * w * dt * (always ? 1 : 1);
+    pr.disc.material.opacity = k < 0.02 ? 0 : 0.05 + 0.20 * Math.min(k, 1.4);
+  }
+}
+function applyRig(drone, s, offset, dt) {
+  drone.group.position.copy(s.pos).add(offset); drone.group.quaternion.copy(s.q);
+  const hoverF = s.ev.Wt / s.veh.n;
+  spinProps(drone, s.f, hoverF, dt, true);
+  drone.leds.forEach((l, i) => { l.material.color.setHex(s.failed.has(i) ? 0xff3b30 : 0x2ee66b); });
+  drone.labels.forEach((sp, i) => { sp.visible = (S.stage === 'flight' || S.stage === 'compare'); sp.position.copy(s.pos).add(offset).add(new THREE.Vector3(Math.sin(s.layout[i].th) * s.veh.armR, 0.55, -Math.cos(s.layout[i].th) * s.veh.armR).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0))); });
+}
+
+/* ---------- camera tweens and presets ---------- */
+let tween = null, exTarget = null;   // exTarget: explode value the UI is easing toward (null = none)
+function flyTo(pos, tgt, dur = 1.1) { tween = { t: 0, dur, p0: W.camera.position.clone(), t0: W.controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...tgt) }; }
+const VIEWS = { iso: [[2.6, 1.55, -3.4], [0, 0.35, 0]], front: [[0, 0.45, -5.4], [0, 0.35, 0]], side: [[5.4, 0.45, 0], [0, 0.35, 0]], top: [[0, 6.8, 0.01], [0, 0, 0]] };
+function setView(name, instant) { const v = VIEWS[name]; if (!v) return; const e = exTarget !== null ? exTarget : S.explode; const sc = ((S.stage === 'compare') ? 1.9 : 1) * (1 + 0.38 * e), lift = e * 0.5; flyTo([v[0][0] * sc, v[0][1] * sc + lift, v[0][2] * sc], [v[1][0], v[1][1] + lift, v[1][2]], instant ? 0.001 : 0.9); if (instant) { W.camera.position.copy(tween.p1); W.controls.target.copy(tween.t1); tween = null; } $$('#viewbar [data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === name)); }
+
+/* ---------- selection highlight (overlay clones that pulse) ---------- */
+const hiMat = new THREE.MeshBasicMaterial({ color: 0x2de2e6, transparent: true, opacity: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+let overlays = [];
+function setSelected(id) {
+  overlays.forEach(o => o.parent && o.parent.remove(o)); overlays = [];
+  S.selected = id;
+  if (id) DRONES.hex.parts[id].objs.forEach(root => root.traverse(m => { if (m.isMesh && !m.userData.overlay) { const o = new THREE.Mesh(m.geometry, hiMat); o.userData.overlay = true; o.raycast = () => { }; o.castShadow = false; m.add(o); overlays.push(o); } }));
+  $$('.pbtn').forEach(b => b.setAttribute('aria-pressed', b.dataset.part === id));
+  $$('.plabel').forEach(l => l.classList.toggle('sel', l.dataset.part === id));
+  S.hooks.forEach(h => h.onSelect && h.onSelect(id));
+}
+
+/* ---------- picking ---------- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let downAt = null;
+W.canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+W.canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6 || S.stage === 'flight') return; downAt = null;
+  if (S.stage === 'compare') return;
+  const r = W.canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, W.camera);
+  const hits = ray.intersectObjects(DRONES.hex.group.children.filter(c => c.visible), true).filter(h => h.object.userData.partId);
+  setSelected(hits.length ? hits[0].object.userData.partId : null);
+});
+
+/* ---------- display toggles ---------- */
+function setWire(on) { S.wire = on; Object.values(MATS).forEach(m => { if (m !== MATS.disc && m !== MATS.podDecal) m.wireframe = on; }); $('#btnWire').setAttribute('aria-pressed', on); }
+function setPartVisible(id, v) { if (v) S.hidden.delete(id); else S.hidden.add(id); DRONES.hex.setPartVisible(id, v); }
+
+/* ---------- theme ---------- */
+function effectiveTheme() { const a = document.documentElement.dataset.theme; if (a === 'light' || a === 'dark') return a; return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+function applyTheme() {
+  const th = effectiveTheme(); S.theme = th; const t = SKY_THEMES[th];
+  applySky(sky, th); buildEnv(th); setStudioTheme(th); buildWorld(th);
+  W.scene.fog = new THREE.FogExp2(L(t.fog), 0.00055);
+  hemi.intensity = t.hemiI; sun.color.copy(L(t.sun)); sun.intensity = t.sunI; W.renderer.toneMappingExposure = t.exposure;
+  W.stage.style.background = t.horizon; shadowCatch.material.opacity = th === 'dark' ? 0.5 : 0.28;
+  S.hooks.forEach(h => h.onTheme && h.onTheme(th));
+}
+$('#themeBtn').addEventListener('click', () => { document.documentElement.dataset.theme = S.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('mv-theme', document.documentElement.dataset.theme); } catch (e) { } applyTheme(); });
+try { const t = localStorage.getItem('mv-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) { }
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) applyTheme(); });
+
+/* ---------- stage modes: what the 3D view shows for each tab ---------- */
+function setStageMode(tab) {
+  S.stage = tab; W.stage.dataset.mode = tab; Object.values(DRONES).forEach(d => d.labels.forEach(l => { l.visible = false; }));
+  const flight = tab === 'flight', cmp = tab === 'compare';
+  studio.visible = !flight; world.visible = flight; sky.visible = true;
+  W.scene.fog.density = flight ? 0.00055 : 0;
+  trail.line.visible = flight;
+  $('#viewbar').classList.toggle('hide', flight);
+  $('#explodeBox').classList.toggle('hide', flight || cmp);
+  $('#flightHud').style.display = (flight || cmp) ? 'grid' : 'none'; $('#flightHud').style.top = cmp ? '58px' : '12px'; $('#rotorBars').style.display = (flight || cmp) ? 'flex' : 'none';
+  $('#stick').style.display = flight && window.matchMedia('(pointer: coarse), (max-width: 900px)').matches ? 'flex' : 'none';
+  if (flight) { setShadowBox(14, 1, 120); resetFlight(); }
+  else { setShadowBox(5.5, 1, 40); sun.target.position.set(0, 0, 0); sun.position.copy(SUNDIR).multiplyScalar(18); }
+  // which drone is visible and where
+  if (flight) { DRONES.hex.group.visible = S.flightVeh === 'hex'; DRONES.quad.group.visible = S.flightVeh === 'quad'; }
+  else if (cmp) { DRONES.hex.group.visible = DRONES.quad.group.visible = true; }
+  else { DRONES.hex.group.visible = true; DRONES.quad.group.visible = false; }
+  if (!flight && !cmp) { DRONES.hex.group.position.set(0, Phys.VEH ? 0.42 : 0, 0); DRONES.hex.group.quaternion.identity(); DRONES.hex.explode(S.explode * 1.0); DRONES.hex.group.position.y = 0.42 + S.explode * 0.95; }
+  trail.line.visible = flight;
+}
+const CMP_X = 2.1;                                            // lateral offset of each vehicle in compare view
+
+/* ---------- resize ---------- */
+function resize() { const w = W.stage.clientWidth, h = W.stage.clientHeight; if (!w || !h) return; W.renderer.setSize(w, h, false); W.camera.aspect = w / h; W.camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(W.stage);
+
+/* ---------- label layer: leader lines to each part ---------- */
+const LBL = { els: {}, svg: $('#leaders'), built: false };
+function buildLabels() {
+  const layer = $('#labelLayer'); PART_ORDER.forEach(id => { const d = document.createElement('div'); d.className = 'plabel'; d.dataset.part = id; d.textContent = PARTS[id].short; d.style.display = 'none'; d.addEventListener('click', () => setSelected(id)); layer.appendChild(d); LBL.els[id] = d; });
+  LBL.lines = {}; PART_ORDER.forEach(id => { const l = document.createElementNS('http://www.w3.org/2000/svg', 'line'), c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('r', 3); LBL.svg.append(l, c); LBL.lines[id] = [l, c]; });
+}
+const _b = new THREE.Box3(), _v = new THREE.Vector3();
+function anchorFor(id) {
+  const objs = DRONES.hex.parts[id].objs; let o = objs[0];
+  if (id === 'thermal') o = objs[objs.length - 1];            // cold plate
+  else if (objs.length > 1) { o = objs.reduce((a, b) => (a.userData.base.x > b.userData.base.x ? a : b)); }
+  _b.setFromObject(o); return _b.getCenter(_v).clone();
+}
+function updateLabels() {
+  const show = S.stage === 'design' && (S.labels || S.explode > 0.04);
+  if (!LBL.built) { buildLabels(); LBL.built = true; }
+  const w = W.stage.clientWidth, h = W.stage.clientHeight;
+  if (!show) { PART_ORDER.forEach(id => { LBL.els[id].style.display = 'none'; LBL.lines[id].forEach(e => e.style.display = 'none'); }); return; }
+  const pts = PART_ORDER.map(id => { const p = anchorFor(id).project(W.camera); return { id, x: (p.x * 0.5 + 0.5) * w, y: (-p.y * 0.5 + 0.5) * h, vis: DRONES.hex.parts[id].objs[0].visible && p.z < 1 }; }).filter(p => p.vis);
+  const cx = w / 2, colL = 10, colR = w - 10, gap = w < 520 ? 17 : 24;
+  for (const side of [-1, 1]) {
+    const col = pts.filter(p => (p.x < cx ? -1 : 1) === side).sort((a, b) => a.y - b.y);
+    let last = 58; col.forEach(p => { p.ly = Math.max(p.y, last + gap); last = p.ly; }); const over = last - (h - 62); if (over > 0) col.forEach(p => { p.ly = Math.max(58, p.ly - over); });
+    col.forEach(p => { p.lx = side < 0 ? colL : colR; p.side = side; });
+  }
+  PART_ORDER.forEach(id => { const el = LBL.els[id], [ln, c] = LBL.lines[id], p = pts.find(q => q.id === id); if (!p) { el.style.display = 'none'; ln.style.display = c.style.display = 'none'; return; }
+    el.style.display = 'block'; el.style.left = p.side < 0 ? colL + 'px' : 'auto'; el.style.right = p.side > 0 ? 10 + 'px' : 'auto'; el.style.top = p.ly + 'px';
+    const ex = p.side < 0 ? colL + el.offsetWidth : colR - el.offsetWidth;
+    ln.style.display = c.style.display = 'block'; ln.setAttribute('x1', ex); ln.setAttribute('y1', p.ly); ln.setAttribute('x2', p.x); ln.setAttribute('y2', p.y); c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); });
+}
+
+/* ---------- main loop ---------- */
+const clock = new THREE.Clock(); let frame = 0;
+const _o1 = new THREE.Vector3(-CMP_X, 0, 0), _o2 = new THREE.Vector3(CMP_X, 0, 0), _zero = new THREE.Vector3();
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime; frame++;
+  if (tween) { tween.t += dt / tween.dur; const k = ease(Math.min(tween.t, 1)); W.camera.position.lerpVectors(tween.p0, tween.p1, k); W.controls.target.lerpVectors(tween.t0, tween.t1, k); if (tween.t >= 1) tween = null; }
+  const tab = S.stage;
+  if (tab === 'flight') {
+    S.hooks.forEach(h => h.preStep && h.preStep(dt));
+    sim.wind = S.wind; sim.advance(dt); const d = DRONES[S.flightVeh]; applyRig(d, sim, _zero, dt); pushTrail(sim.pos);
+    // follow camera
+    const dp = sim.pos.clone().sub(W.controls.target).multiplyScalar(Math.min(1, dt * 4)); if (!tween) { W.controls.target.add(dp); W.camera.position.add(dp); }
+    sun.target.position.copy(sim.pos); sun.position.copy(sim.pos).addScaledVector(SUNDIR, 40);
+    updateDust(dt); if (WORLD.windsock) WORLD.windsock.rotation.z = Math.PI / 2 * clamp(0.08 + S.wind / 8, 0.08, 1);
+  } else if (tab === 'compare') {
+    if (simCmp.on) { sim.wind = sim2.wind = S.wind; sim.advance(dt); sim2.advance(dt); S.hooks.forEach(h => h.preStep && h.preStep(dt)); applyRig(DRONES.hex, sim, _o1, dt); applyRig(DRONES.quad, sim2, _o2, dt); }
+    else { for (const [id, off] of [['hex', _o1], ['quad', _o2]]) { const d = DRONES[id]; d.group.position.set(off.x, 0.42, 0); d.group.quaternion.identity(); spinProps(d, null, 1, dt, false); d.labels.forEach(l => l.visible = false); d.explode && d.explode(0); } }
+    sun.target.position.set(0, 0, 0); sun.position.copy(SUNDIR).multiplyScalar(18);
+  } else {
+    const d = DRONES.hex; if (S.spin) { const hf = Phys.evaluate(Phys.VEH.hex, S.env); spinProps(d, null, 1, dt, false); }
+    d.explode(S.explode * 1.0); d.group.position.y = 0.42 + S.explode * 0.95;
+    if (S.selected) hiMat.opacity = 0.22 + 0.16 * Math.sin(t * 5);
+  }
+  W.controls.update();
+  if (frame % 2 === 0) updateLabels();
+  S.hooks.forEach(h => h.onFrame && h.onFrame(dt, t));
+  W.renderer.render(W.scene, W.camera);
+}
+
+/* rotor wash dust particles near the ground under the drone */
+function updateDust(dt) {
+  const D = WORLD.dust; if (!D) return; const agl = sim.pos.y - 0.42, thr = clamp(sim.f.reduce((a, b) => a + b, 0) / sim.ev.Wt, 0, 2), k = clamp(1 - agl / 7, 0, 1) * (sim.armed ? clamp(thr, 0, 1.3) : 0);
+  const a = D.pts.geometry.attributes.position.array, tt = clock.elapsedTime;
+  for (let i = 0; i < D.n; i++) { const ph = (tt * 0.6 + D.seed[i * 2]) % 1, ang = D.seed[i * 2 + 1] * 6.283 + i, r = 0.5 + ph * (4 + 5 * k); a[i * 3] = sim.pos.x + Math.cos(ang) * r; a[i * 3 + 1] = 0.15 + ph * 0.9 * k; a[i * 3 + 2] = sim.pos.z + Math.sin(ang) * r; }
+  D.pts.geometry.attributes.position.needsUpdate = true; D.pts.material.opacity = 0.5 * k * k;
+}
+
+function resetFlight() {
+  const veh = Phys.VEH[S.flightVeh]; sim.setVehicle(veh, S.env); sim.wind = S.wind; clearTrail();
+  DRONES.hex.group.visible = S.flightVeh === 'hex'; DRONES.quad.group.visible = S.flightVeh === 'quad';
+  const d = DRONES[S.flightVeh]; d.explode(0); applyRig(d, sim, _zero, 0.016);
+  W.controls.target.set(0, 1.0, 0); W.camera.position.set(-4.6, 3.0, 6.2); W.controls.maxDistance = 120;
+}
+function startCompareRace() {
+  sim.setVehicle(Phys.VEH.hex, S.env); sim2.setVehicle(Phys.VEH.quad, S.env);
+  [sim, sim2].forEach(s => { s.command('takeoff'); }); simCmp = { on: true, tFail: null, t: 0 };
+}
+function stopCompareRace() { simCmp.on = false; }
+
+/* ---------- boot ---------- */
+applyTheme(); resize(); setStageMode('design'); setView('iso'); W.camera.position.set(...VIEWS.iso[0]); W.controls.target.set(0, 0.35, 0); tween = null;
+requestAnimationFrame(() => { $('#loadNote').classList.add('done'); });
+loop();
+
+/* ===== app_ui1.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · app_ui1.js  (part 1)
+   Helpers, evaluation context, SVG charts, Design and Physics widgets.
+   Each widget is { el, update() }. Panels are lists of widgets.
+   ===================================================================== */
+const fmt = (x, d = 1) => (isFinite(x) ? x.toFixed(d) : '–');
+const h = (html, cls = '', tag = 'div') => { const e = document.createElement(tag); if (cls) e.className = cls; e.innerHTML = html; return e; };
+let toastT = 0;
+function toast(msg, ms = 2400) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+
+/* ---------- shared evaluation context, recomputed when conditions change ---------- */
+let CTX = null, ctxDirty = true;
+function ctx() {
+  if (ctxDirty || !CTX) {
+    const env = S.env;
+    CTX = { hex: Phys.evaluate(Phys.VEH.hex, env), quad: Phys.evaluate(Phys.VEH.quad, env), hexNoTM: Phys.evaluate(Phys.VEH.hex, Object.assign({}, env, { thermal: false })) };
+    ctxDirty = false;
+  }
+  return CTX;
+}
+const ALT_GRID = Array.from({ length: 31 }, (_, i) => i * 200);
+let SWEEP = null;
+function sweepAll() {
+  if (SWEEP && !ctxDirty) return SWEEP;
+  const env = S.env, ev = (v, e) => ALT_GRID.map(hh => Phys.evaluate(v, Object.assign({}, env, e, { h: hh })));
+  SWEEP = { hex: ev(Phys.VEH.hex, {}), hexNo: ev(Phys.VEH.hex, { thermal: false }), quad: ev(Phys.VEH.quad, {}) };
+  return SWEEP;
+}
+
+/* ---------- SVG line chart ---------- */
+function lineChart(o) {
+  const W = 380, H = 236, L = 46, R = 14, T = 16, B = 36, pw = W - L - R, ph = H - T - B;
+  const xs = o.x, x0 = xs[0], x1 = xs[xs.length - 1];
+  const all = o.series.flatMap(s => s.y).concat((o.hlines || []).map(l => l.y));
+  let ymax = Math.max(...all), ymin = o.ymin !== undefined ? o.ymin : Math.min(0, ...all);
+  const step = niceStep((ymax - ymin) / 4); ymax = Math.ceil(ymax / step) * step; ymin = Math.floor(ymin / step) * step;
+  const X = v => L + (v - x0) / (x1 - x0) * pw, Y = v => T + (1 - (v - ymin) / (ymax - ymin)) * ph;
+  let g = '';
+  for (let v = ymin; v <= ymax + 1e-9; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--c-grid)"/><text x="${L - 6}" y="${Y(v) + 3}" text-anchor="end">${fmtTick(v)}</text>`;
+  for (let v = x0; v <= x1; v += 1000) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${T + ph}" style="stroke:var(--c-grid)"/><text x="${X(v)}" y="${H - B + 14}" text-anchor="middle">${v / 1000}</text>`;
+  g += `<text x="${L + pw / 2}" y="${H - 4}" text-anchor="middle">${o.xlabel}</text><text transform="translate(11 ${T + ph / 2}) rotate(-90)" text-anchor="middle">${o.ylabel}</text>`;
+  (o.hlines || []).forEach(l => { g += `<line x1="${L}" x2="${W - R}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:${l.color}" stroke-width="1.4" stroke-dasharray="5 4"/><text x="${W - R - 2}" y="${Y(l.y) - 4}" text-anchor="end" style="fill:${l.color}">${l.label}</text>`; });
+  o.series.forEach(s => {
+    const d = s.y.map((v, i) => (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(v).toFixed(1)).join('');
+    if (s.fill) g += `<path d="${d}L${X(x1)} ${Y(ymin)}L${X(x0)} ${Y(ymin)}Z" style="fill:${s.color}" opacity=".10"/>`;
+    g += `<path d="${d}" fill="none" style="stroke:${s.color}" stroke-width="2.4" stroke-linejoin="round" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`;
+  });
+  const hx = clamp(o.marker, x0, x1);
+  g += `<line x1="${X(hx)}" x2="${X(hx)}" y1="${T}" y2="${T + ph}" style="stroke:var(--ink)" stroke-width="1" opacity=".55"/>`;
+  o.series.forEach(s => { const v = interp(xs, s.y, hx); g += `<circle cx="${X(hx)}" cy="${Y(v)}" r="4" style="fill:${s.color};stroke:var(--surface2)" stroke-width="1.5"/>`; });
+  g += `<line id="cx" x1="0" x2="0" y1="${T}" y2="${T + ph}" style="stroke:var(--ink)" stroke-width="1" stroke-dasharray="2 3" opacity="0"/><rect class="hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  return { svg: `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria}">${g}</svg>`, X, L, pw, x0, x1 };
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
+function fmtTick(v) { return Math.abs(v) >= 1000 ? (v / 1000) + 'k' : (Math.round(v * 10) / 10) + ''; }
+function interp(xs, ys, x) { if (x <= xs[0]) return ys[0]; for (let i = 1; i < xs.length; i++) if (x <= xs[i]) return lerp(ys[i - 1], ys[i], (x - xs[i - 1]) / (xs[i] - xs[i - 1])); return ys[ys.length - 1]; }
+function chartWidget(title, build, unit) {
+  const el = h('', 'card'); el.innerHTML = `<h3>${title}</h3><div class="cwrap"></div><div class="legend"></div><div class="note mono readout">Move over the chart to read values.</div>`;
+  const wrap = $('.cwrap', el), leg = $('.legend', el), ro = $('.readout', el);
+  function update() {
+    const o = build(); const c = lineChart(o); wrap.innerHTML = c.svg;
+    leg.innerHTML = o.series.map(s => `<span><i style="border-color:${s.color};${s.dash ? 'border-top-style:dashed' : ''}"></i>${s.label}</span>`).join('');
+    const svg = $('svg', wrap), cx = $('#cx', svg), hit = $('.hit', svg);
+    const move = e => { const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * 380; const alt = clamp(c.x0 + (vx - c.L) / c.pw * (c.x1 - c.x0), c.x0, c.x1);
+      cx.setAttribute('x1', c.X(alt)); cx.setAttribute('x2', c.X(alt)); cx.setAttribute('opacity', .8);
+      ro.innerHTML = `<b>${fmt(alt, 0)} m</b> · ` + o.series.map(s => `${s.label.split(' ')[0]} ${fmt(interp(o.x, s.y, alt), 1)}${unit}`).join(' · '); };
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', () => { cx.setAttribute('opacity', 0); });
+  }
+  return { el, update };
+}
+function enduranceChart() {
+  return chartWidget('Altitude vs endurance (hover)', () => { const sw = sweepAll();
+    return { x: ALT_GRID, xlabel: 'altitude, km', ylabel: 'endurance, min', marker: S.env.h, aria: 'Endurance against altitude for the H6, the H6 without the warming loop, and the reference quad',
+      series: [{ label: 'H6 with warming loop', color: 'var(--c-hex)', y: sw.hex.map(e => e.endurance), fill: true }, { label: 'H6 loop off', color: 'var(--c-hex)', dash: '5 4', y: sw.hexNo.map(e => e.endurance) }, { label: 'Quad reference', color: 'var(--c-quad)', y: sw.quad.map(e => e.endurance) }] }; }, ' min');
+}
+function thrustChart() {
+  return chartWidget('Altitude vs thrust margin', () => { const sw = sweepAll(), c = ctx(), need = (c.hex.mo.fReq * c.hex.v.n / c.hex.Wt - 1) * 100;
+    return { x: ALT_GRID, xlabel: 'altitude, km', ylabel: 'thrust above hover weight, %', marker: S.env.h, ymin: 0, aria: 'Thrust margin against altitude for the H6 and the reference quad, with the margin the H6 needs to survive a motor loss',
+      hlines: [{ y: need, label: 'H6 needs ' + fmt(need, 0) + '% for motor-out', color: 'var(--bad)' }],
+      series: [{ label: 'H6 (6 rotors)', color: 'var(--c-hex)', y: sw.hex.map(e => (e.TW - 1) * 100), fill: true }, { label: 'Quad reference', color: 'var(--c-quad)', y: sw.quad.map(e => (e.TW - 1) * 100) }] }; }, ' %');
+}
+
+/* ---------- conditions card (shared by Physics, Flight, Compare, Present) ---------- */
+const PRESETS = [['Sea level ISA', { h: 0, dT: 0 }], ['3000 m ISA', { h: 3000, dT: 0 }], ['5000 m, ISA −20', { h: 5000, dT: -20 }], ['6000 m, ISA −25', { h: 6000, dT: -25 }]];
+function condWidget() {
+  const el = h('', 'card'), defs = [
+    ['h', 'Altitude (pressure altitude)', 0, 6000, 100, v => fmt(v, 0) + ' m'], ['dT', 'Temperature offset from ISA', -30, 15, 1, v => (v > 0 ? '+' : '') + v + ' °C'],
+    ['payload', 'Payload', 0, 10, 0.5, v => fmt(v, 1) + ' kg'], ['battWh', 'Battery energy', 1200, 4000, 100, v => fmt(v, 0) + ' Wh']];
+  el.innerHTML = `<h3>Conditions</h3>` + defs.map(d => `<div class="sl"><label for="c_${d[0]}">${d[1]}</label><output id="o_${d[0]}"></output><input type="range" id="c_${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[4]}"></div>`).join('') +
+    `<div class="row"><button class="btn sm" id="c_thermal" aria-pressed="true">Warming loop: on</button>${PRESETS.map((p, i) => `<button class="btn sm" data-pre="${i}">${p[0]}</button>`).join('')}</div><div class="note mono" id="c_air"></div>`;
+  function setAll() { defs.forEach(d => { $('#c_' + d[0], el).value = S.env[d[0]]; $('#o_' + d[0], el).textContent = d[5](+S.env[d[0]]); }); const b = $('#c_thermal', el); b.setAttribute('aria-pressed', S.env.thermal); b.textContent = 'Warming loop: ' + (S.env.thermal ? 'on' : 'off');
+    const a = ctx().hex.atm; $('#c_air', el).textContent = `T ${fmt(a.Tc, 1)} °C · p ${fmt(a.p / 1000, 1)} kPa · ρ ${fmt(a.rho, 3)} kg/m³ (σ ${fmt(a.sigma, 2)})`; }
+  defs.forEach(d => $('#c_' + d[0], el).addEventListener('input', e => { S.env[d[0]] = +e.target.value; envChanged(); }));
+  $('#c_thermal', el).addEventListener('click', () => { S.env.thermal = !S.env.thermal; envChanged(); });
+  $$('[data-pre]', el).forEach(b => b.addEventListener('click', () => { Object.assign(S.env, PRESETS[+b.dataset.pre][1]); envChanged(); }));
+  return { el, update: setAll };
+}
+
+/* ---------- Design tab widgets ---------- */
+function partsWidget() {
+  const el = h('', 'card'); el.innerHTML = `<h3>Parts</h3><div class="partlist">${PART_ORDER_UI.map(id => `<button class="pbtn" data-part="${id}" aria-pressed="false"><i style="background:${PARTS[id].color}"></i><span>${PARTS[id].name}</span><span class="eye" data-eye="${id}" role="switch" aria-label="Show ${PARTS[id].short}" aria-checked="true">●</span></button>`).join('')}</div><div class="note">Tap a part here or in the 3D view. The ● toggles visibility.</div>`;
+  $$('.pbtn', el).forEach(b => b.addEventListener('click', e => { if (e.target.dataset.eye) { const id = e.target.dataset.eye, vis = S.hidden.has(id); setPartVisible(id, vis); e.target.style.opacity = vis ? .55 : .15; e.target.setAttribute('aria-checked', vis); return; } setSelected(S.selected === b.dataset.part ? null : b.dataset.part); }));
+  return { el, update() { } };
+}
+function infoWidget() {
+  const el = h('', 'card');
+  function update() {
+    const id = S.selected, mb = ctx().hex.mass;
+    if (!id) { el.innerHTML = `<h3>Part details</h3><div class="note">Select a part to see its function, material, estimated mass and why it is designed this way.</div>`; return; }
+    const P = PARTS[id], m = partMass(id, mb);
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><h2>${P.name}</h2><span class="tag">estimated</span></div>
+      <div class="kv"><div class="kpi"><small>Quantity</small><b style="font-size:14px">${P.qty(Phys.VEH.hex)}</b></div><div class="kpi"><small>Est. mass</small><b>${fmt(m, 2)}<em>kg</em></b></div><div class="kpi"><small>Share of AUW</small><b>${fmt(m / mb.total * 100, 1)}<em>%</em></b></div></div>
+      <div><h3>Function</h3><p>${P.fn}</p></div><div><h3>Material</h3><p>${P.material}</p></div><div><h3>Design reason</h3><p>${P.reason}</p></div>`;
+  }
+  return { el, update };
+}
+function massWidget() {
+  const el = h('', 'card');
+  function update() {
+    const mb = ctx().hex.mass, rows = PART_ORDER_UI.filter(id => PARTS[id].mass.length).map(id => ({ id, m: partMass(id, mb) }));
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><h3>Mass budget</h3><b class="mono">${fmt(mb.total, 1)} kg AUW</b></div>
+      <div style="display:flex;height:14px;border-radius:4px;overflow:hidden;border:1px solid var(--line2)">${rows.map(r => `<i title="${PARTS[r.id].short} ${fmt(r.m, 2)} kg" style="width:${r.m / mb.total * 100}%;background:${PARTS[r.id].color}"></i>`).join('')}</div>
+      <div class="scroll-x"><table><tr><th>Part</th><th>kg</th><th>%</th></tr>${rows.sort((a, b) => b.m - a.m).map(r => `<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${PARTS[r.id].color};margin-right:6px"></span>${PARTS[r.id].short}</td><td class="mono">${fmt(r.m, 2)}</td><td class="mono">${fmt(r.m / mb.total * 100, 1)}</td></tr>`).join('')}</table></div>
+      <div class="note">Masses are estimates for this concept (physics.js). Replace them with CAD mass properties when the model is built.</div>`;
+  }
+  return { el, update };
+}
+
+/* ---------- Physics tab widgets ---------- */
+function kpiWidget() {
+  const el = h('', 'card');
+  function update() {
+    const c = ctx().hex, a = c.atm, need = c.mo.fReq * c.v.n / c.Wt;
+    const moState = c.mo.status === 'ok' ? 'good' : 'bad', twState = c.TW >= need ? 'good' : c.TW >= 1 ? 'warn' : 'bad';
+    const k = (l, v, u, cls = '') => `<div class="kpi ${cls}"><small>${l}</small><b>${v}<em>${u}</em></b></div>`;
+    el.innerHTML = `<h3>Live results · H6</h3><div class="kv">
+      ${k('Air density', fmt(a.rho, 3), 'kg/m³')}${k('Density ratio', fmt(a.sigma * 100, 0), '%')}${k('All-up mass', fmt(c.mass.total, 1), 'kg')}
+      ${k('Hover power', fmt(c.Ptot / 1000, 2), 'kW')}${k('Per motor', fmt(c.Pmotor, 0), 'W')}${k('Hover speed', fmt(c.rpm, 0), 'rpm')}
+      ${k('Tip Mach', fmt(c.mach, 2), '')}${k('Disk loading', fmt(c.DL, 1), 'N/m²')}${k('Pack temp', fmt(c.batt.Tcell, 1), '°C')}
+      ${k('Capacity factor', fmt(c.batt.f, 2), '')}${k('Usable energy', fmt(c.usableWh, 0), 'Wh')}${k('Endurance', fmt(c.endurance, 1), 'min')}
+      ${k('Thrust / weight', fmt(c.TW, 2), '', twState)}${k('Motor-out', c.mo.status === 'ok' ? 'HOLDS' : c.mo.status === 'saturated' ? 'LIMIT' : 'LOST', '', moState)}${k('Motor-out margin', fmt(c.mo.margin, 2), '×', moState)}</div>
+      <div class="note">Motor-out: remove each rotor in turn, solve for thrust that holds weight with zero roll and pitch moment, compare the busiest rotor with its limit (${fmt(c.fmax.f, 1)} N, set by ${c.fmax.limit}). Worst case: rotor M${c.mo.rotor + 1}. Needs T/W ≥ ${fmt(need, 2)}.</div>`;
+  }
+  return { el, update };
+}
+function formulaWidget() {
+  const el = h('', 'card'), A = Phys.A;
+  function update() {
+    const c = ctx().hex, a = c.atm, n = x => `<span class="n">${x}</span>`, o = $$('details', el).map(d => d.open);
+    const blocks = [
+      ['1 · ISA atmosphere', `T  = T0 − L·h  = 288.15 − 0.0065 × ${n(fmt(S.env.h, 0))} = ${n(fmt(a.Tstd, 2))} K  ${'<span class="c">(+ΔT ' + S.env.dT + ' → ' + fmt(a.T, 2) + ' K)</span>'}\np  = p0·(Tstd/T0)^(g/(R·L)) = ${n(fmt(a.p, 0))} Pa\nρ  = p / (R·T) = ${n(fmt(a.rho, 4))} kg/m³     σ = ρ/1.225 = ${n(fmt(a.sigma, 3))}\na  = √(γ·R·T) = ${n(fmt(a.a, 1))} m/s`],
+      ['2 · Hover power (momentum theory)', `W      = m·g = ${fmt(c.mass.total, 2)} × 9.80665 = ${n(fmt(c.Wt, 1))} N\nA_tot  = n·π·(D/2)² = ${c.v.n} × π × ${fmt(c.R, 3)}² = ${n(fmt(c.Atot, 3))} m²\nDL     = W / A_tot = ${n(fmt(c.DL, 1))} N/m²\nv_i    = √(T_r / (2ρA)) = ${n(fmt(c.vi, 2))} m/s\nP_ideal= W^1.5 / √(2ρ·A_tot) = ${n(fmt(c.Pid, 0))} W\nP_elec = P_ideal / (FM·η_m·η_esc) = ${fmt(c.Pid, 0)} / (${A.FM} × ${A.etaMotor} × ${A.etaEsc}) = ${n(fmt(c.Pprop, 0))} W\nP_tot  = P_elec + P_aux(${c.v.pAux}) = ${n(fmt(c.Ptot, 0))} W\nV_tip  = √(T_r / (ρ·A·CT)) = ${n(fmt(c.tipV, 1))} m/s → ${n(fmt(c.rpm, 0))} rpm, Mach ${fmt(c.mach, 2)}`],
+      ['3 · Battery warming and cold derating', `Q_loss  = P_elec·(1 − η_m·η_esc) = ${n(fmt(c.batt.lossMotEsc, 0))} W   (motors + ESCs)\nQ_pack  = P_elec·(1 − η_pack) = ${n(fmt(c.batt.Qself, 0))} W\nQ_in    = ${c.batt.managed ? 'α·Q_loss + Q_pack = ' + A.capture + ' × ' + fmt(c.batt.lossMotEsc, 0) + ' + ' + fmt(c.batt.Qself, 0) : 'Q_pack (loop off)'} = ${n(fmt(c.batt.Qin, 0))} W\nT_cell  = T_amb + Q_in/UA = ${fmt(a.Tc, 1)} + ${fmt(c.batt.Qin, 0)}/${c.batt.UA} → ${n(fmt(c.batt.Tcell, 1))} °C  ${'<span class="c">(capped at ' + A.TcellMax + ' °C by bypass)</span>'}\nf       = 1 − ${A.capSlope}·(25 − T_cell) = ${n(fmt(c.batt.f, 3))}   ${'<span class="c">(floor ' + A.capFloor + ')</span>'}`],
+      ['4 · Endurance', `E_usable = E_batt × DoD × f = ${S.env.battWh} × ${A.dod} × ${fmt(c.batt.f, 3)} = ${n(fmt(c.usableWh, 0))} Wh\nt        = E_usable / P_tot × 60 = ${fmt(c.usableWh, 0)} / ${fmt(c.Ptot, 0)} × 60 = ${n(fmt(c.endurance, 1))} min`],
+      ['5 · Thrust limit and thrust-to-weight', `T_pow  = (P_max·FM·η·√(2ρA))^(2/3) = ${n(fmt(c.fmax.byPower, 1))} N per rotor\nT_mach = ρ·A·CT·(M_max·a)² = ${n(fmt(c.fmax.byMach, 1))} N per rotor\nT_max  = min(T_pow, T_mach) = ${n(fmt(c.fmax.f, 1))} N  (${c.fmax.limit})\nT/W    = n·T_max / W = ${c.v.n} × ${fmt(c.fmax.f, 1)} / ${fmt(c.Wt, 1)} = ${n(fmt(c.TW, 2))}`],
+      ['6 · Motor-out check', `For each failed rotor j (f_j = 0), find f ≥ 0 such that\n  Σ f_i = W        (lift)\n  Σ −z_i·f_i = 0   (roll moment)\n  Σ  x_i·f_i = 0   (pitch moment)\n  Σ s_i·k·f_i = 0  (yaw; dropped first if infeasible)\nwith k = Q/T = ${fmt(c.kyaw, 4)} m.  Pass if max f_i ≤ T_max.\nResult: busiest rotor ${n(fmt(c.mo.fReq, 1))} N vs limit ${fmt(c.fmax.f, 1)} N → margin ${n(fmt(c.mo.margin, 2) + '×')}`]
+    ];
+    el.innerHTML = `<h3>Formulas in use (live numbers)</h3>` + blocks.map((b, i) => `<details${o[i] ? ' open' : ''}><summary>${b[0]}</summary><div><div class="formula">${b[1]}</div></div></details>`).join('');
+  }
+  return { el, update };
+}
+function assumpWidget() {
+  const el = h('', 'card'), A = Phys.A, orig = Object.assign({}, A);
+  const defs = [['FM', 'Rotor figure of merit', 0.5, 0.85, 0.01, v => fmt(v, 2)], ['battSpecEnergy', 'Pack specific energy', 120, 300, 5, v => fmt(v, 0) + ' Wh/kg'], ['capture', 'Share of motor heat reaching the pack', 0, 0.6, 0.01, v => fmt(v * 100, 0) + ' %'], ['capSlope', 'Capacity loss per °C below 25 °C', 0, 0.015, 0.0005, v => fmt(v * 100, 2) + ' %'], ['pMotorMax', 'Per-motor power limit', 1000, 3500, 50, v => fmt(v, 0) + ' W']];
+  el.innerHTML = `<details><summary>Edit key assumptions</summary><div>${defs.map(d => `<div class="sl"><label for="a_${d[0]}">${d[1]}</label><output id="ao_${d[0]}"></output><input type="range" id="a_${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[4]}"></div>`).join('')}<div class="row"><button class="btn sm" id="a_reset">Reset to defaults</button></div><div class="note">These values are assumptions, not measured data. Change them to see how sensitive the result is.</div></div></details>`;
+  function sync() { defs.forEach(d => { $('#a_' + d[0], el).value = A[d[0]]; $('#ao_' + d[0], el).textContent = d[5](A[d[0]]); }); }
+  defs.forEach(d => $('#a_' + d[0], el).addEventListener('input', e => { A[d[0]] = +e.target.value; sync(); envChanged(); }));
+  $('#a_reset', el).addEventListener('click', () => { Object.assign(A, orig); sync(); envChanged(); });
+  return { el, update: sync };
+}
+
+/* ===== app_ui2.js ===== */
+/* =====================================================================
+   MEDVAYU H6 · app_ui2.js  (part 2)
+   Flight controls and HUD, compare table and race, guided tour, notes,
+   tab manager, keyboard and touch input, boot.
+   ===================================================================== */
+
+/* ---------- input: keyboard + virtual sticks merge into one command vector ---------- */
+const KEYS = new Set(), JOY = { L: { x: 0, y: 0 }, R: { x: 0, y: 0 } };
+function readInput() {
+  const k = c => KEYS.has(c) ? 1 : 0;
+  const fwd = k('KeyW') - k('KeyS') + k('ArrowUp') - k('ArrowDown') + JOY.R.y, right = k('KeyD') - k('KeyA') + JOY.R.x;
+  const up = k('Space') + k('KeyR') - k('ShiftLeft') - k('ShiftRight') - k('KeyF') + JOY.L.y, yaw = k('KeyE') - k('KeyQ') + k('ArrowRight') - k('ArrowLeft') + JOY.L.x;
+  return { fwd: clamp(fwd, -1, 1), right: clamp(right, -1, 1), up: clamp(up, -1, 1), yaw: clamp(yaw, -1, 1) };
+}
+window.addEventListener('keydown', e => {
+  if (e.target.matches && e.target.matches('input,select,textarea')) return;
+  if (S.tab === 'present') { if (e.key === 'ArrowRight') { tourGo(S.tourStep + 1); e.preventDefault(); } if (e.key === 'ArrowLeft') { tourGo(S.tourStep - 1); e.preventDefault(); } return; }
+  if (S.stage !== 'flight') return;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  KEYS.add(e.code);
+  if (e.code === 'KeyT') flightCmd('takeoff'); if (e.code === 'KeyH') flightCmd('hover'); if (e.code === 'KeyG') flightCmd('forward'); if (e.code === 'KeyL') flightCmd('land'); if (e.code === 'KeyX') failSelected();
+});
+window.addEventListener('keyup', e => KEYS.delete(e.code));
+window.addEventListener('blur', () => KEYS.clear());
+function joystick(el, store) {
+  const knob = $('i', el); let id = null;
+  const set = (x, y) => { store.x = x; store.y = y; knob.style.transform = `translate(${x * 34}px, ${-y * 34}px)`; };
+  const mv = e => { const r = el.getBoundingClientRect(), dx = (e.clientX - r.left - r.width / 2) / 44, dy = -(e.clientY - r.top - r.height / 2) / 44, m = Math.hypot(dx, dy) || 1, k = Math.min(1, m) / m; set(dx * k, dy * k); };
+  el.addEventListener('pointerdown', e => { id = e.pointerId; el.setPointerCapture(id); mv(e); e.preventDefault(); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === id) mv(e); });
+  const end = e => { if (e.pointerId === id) { id = null; set(0, 0); } };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+joystick($('#joyL'), JOY.L); joystick($('#joyR'), JOY.R);
+
+/* ---------- flight actions ---------- */
+function flightCmd(c) { if (S.stage !== 'flight') return; if (c === 'reset') { resetFlight(); toast('Reset to the pad'); } else sim.command(c); }
+function failSelected() { const sel = $('#f_motor'); const i = sel ? +sel.value : 0; if (!sim.armed) { toast('Take off first'); return; } sim.failMotor(i); toast('Motor M' + (i + 1) + ' failed'); }
+
+function flightWidget() {
+  const el = h('', 'card'), n6 = Array.from({ length: 6 }, (_, i) => `<option value="${i}">M${i + 1}</option>`).join('');
+  el.innerHTML = `<h3>Flight simulation</h3>
+    <div class="row"><button class="btn sm" data-veh="hex" aria-pressed="true">MedVayu H6</button><button class="btn sm" data-veh="quad" aria-pressed="false">Reference quad</button></div>
+    <div class="row"><button class="btn pri" data-cmd="takeoff">Takeoff</button><button class="btn" data-cmd="hover">Hover</button><button class="btn" data-cmd="forward">Forward</button><button class="btn" data-cmd="land">Land</button><button class="btn" data-cmd="reset">Reset</button></div>
+    <div class="row"><select id="f_motor" class="btn" aria-label="Motor to fail">${n6}</select><button class="btn warn" id="f_fail">Fail motor</button><button class="btn" id="f_restore">Restore motors</button></div>
+    <div class="sl"><label for="f_wind">Wind (steady, towards +x/+z)</label><output id="f_windo">0 m/s</output><input type="range" id="f_wind" min="0" max="12" step="0.5" value="0"></div>
+    <div class="note" id="f_msg"></div>
+    <details><summary>Controls</summary><div><div class="keys"><kbd>W S</kbd><span>forward / back</span><kbd>A D</kbd><span>left / right</span><kbd>Q E</kbd><span>turn left / right</span><kbd>Space</kbd><span>climb</span><kbd>Shift</kbd><span>descend</span><kbd>T H G L</kbd><span>takeoff, hover, forward, land</span><kbd>X</kbd><span>fail selected motor</span></div><div class="note">On a phone or tablet, use the two sticks over the view: left for climb and turn, right for forward and sideways.</div></div></details>
+    <div class="note">Physics: rigid body, six rotors with 60 ms lag, cascaded position, attitude and rate control, thrust allocation. The controller learns of a failure 0.2 s after it happens.</div>`;
+  $$('[data-cmd]', el).forEach(b => b.addEventListener('click', () => flightCmd(b.dataset.cmd)));
+  $$('[data-veh]', el).forEach(b => b.addEventListener('click', () => { S.flightVeh = b.dataset.veh; setStageMode('flight'); update(); buildBars(); }));
+  $('#f_fail', el).addEventListener('click', failSelected); $('#f_restore', el).addEventListener('click', () => { sim.restoreMotors(); });
+  $('#f_wind', el).addEventListener('input', e => { S.wind = +e.target.value; $('#f_windo', el).textContent = fmt(S.wind, 1) + ' m/s'; });
+  function update() { $$('[data-veh]', el).forEach(b => b.setAttribute('aria-pressed', b.dataset.veh === S.flightVeh)); const n = Phys.VEH[S.flightVeh].n; $$('#f_motor option', el).forEach((o, i) => { o.hidden = i >= n; }); $('#f_msg', el).textContent = S.flightVeh === 'quad' ? 'Reference quad: four 610 mm props, no warming loop. Fail a motor and watch it tumble.' : 'Takeoff, then fail a motor in hover. Watch the bars: the five healthy rotors share the load.'; }
+  return { el, update };
+}
+
+/* ---------- rotor thrust bars, history trace and flight HUD ---------- */
+function buildBars() { const n = sim.veh.n; $('#rbars').innerHTML = Array.from({ length: n }, (_, i) => `<div class="rbar" data-i="${i}"><div class="trk"><div class="fil" style="height:0"></div><div class="cmd" style="bottom:0"></div></div><small>M${i + 1}</small></div>`).join(''); }
+const HIST = $('#thrustHist'), hctx = HIST.getContext('2d'); let cssCache = { t: 0 };
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function drawHistory(s) {
+  const w = HIST.width, hh = HIST.height; hctx.clearRect(0, 0, w, hh); const hist = s.history; if (hist.length < 2) return;
+  const good = cssVar('--accent'), bad = cssVar('--bad'), n = s.veh.n;
+  for (let i = 0; i < n; i++) { hctx.beginPath(); hist.forEach((p, k) => { const x = k / 239 * w, y = hh - 3 - clamp(p.f[i] / s.fmax, 0, 1.1) * (hh - 8); k ? hctx.lineTo(x, y) : hctx.moveTo(x, y); }); hctx.strokeStyle = s.failed.has(i) ? bad : good; hctx.globalAlpha = s.failed.has(i) ? 1 : 0.55; hctx.lineWidth = s.failed.has(i) ? 2 : 1.2; hctx.stroke(); }
+  hctx.globalAlpha = 1;
+}
+function updateBars(s) {
+  $$('#rbars .rbar').forEach((b, i) => { const dead = s.failed.has(i); b.classList.toggle('dead', dead); $('.fil', b).style.height = clamp(s.f[i] / s.fmax * 100, 0, 100) + '%'; $('.cmd', b).style.bottom = clamp(s.fc[i] / s.fmax * 100, 0, 100) + '%'; });
+}
+function updateFlightHud() {
+  const t = sim.telemetry(), hud = $('#flightHud'), a = sim.ev.atm;
+  const st = t.crashed ? 'DOWN' : t.failed.length ? (t.detected.length ? 'MOTOR OUT · REBALANCED' : 'MOTOR OUT · DETECTING') : t.mode.toUpperCase();
+  hud.innerHTML = `<div class="full"><span>STATE</span><b style="color:${t.crashed || t.failed.length ? 'var(--bad)' : 'inherit'}">${st}</b></div><div><span>AGL</span><b>${fmt(t.agl, 1)} m</b></div><div><span>SPEED</span><b>${fmt(t.speed, 1)} m/s</b></div><div><span>V/S</span><b>${fmt(t.vs, 1)} m/s</b></div><div><span>HDG</span><b>${fmt(t.heading, 0)}°</b></div><div><span>TILT</span><b>${fmt(t.tilt, 0)}°</b></div><div><span>POWER</span><b>${fmt(t.power / 1000, 2)} kW</b></div><div><span>BATT</span><b>${fmt(t.soc, 1)} %</b></div><div><span>ρ</span><b>${fmt(a.rho, 2)}</b></div>`;
+}
+
+/* ---------- compare: table, reasons, race ---------- */
+function cmpTableWidget() {
+  const el = h('', 'card');
+  function update() {
+    const c = ctx(), H = c.hex, Q = c.quad, span = v => 2 * (v.armR + v.propD / 2);
+    const rows = [['Rotors', H.v.n, Q.v.n, 0, null], ['Prop diameter, mm', H.v.propD * 1000, Q.v.propD * 1000, 0, null], ['Span, m', span(H.v), span(Q.v), 2, null], ['All-up mass, kg', H.mass.total, Q.mass.total, 1, null], ['Disk loading, N/m²', H.DL, Q.DL, 1, 'low'], ['Hover power, W', H.Ptot, Q.Ptot, 0, 'low'], ['Hover speed, rpm', H.rpm, Q.rpm, 0, 'low'], ['Tip Mach', H.mach, Q.mach, 2, 'low'], ['Pack temp, °C', H.batt.Tcell, Q.batt.Tcell, 1, null], ['Capacity factor', H.batt.f, Q.batt.f, 2, 'high'], ['Usable energy, Wh', H.usableWh, Q.usableWh, 0, 'high'], ['Endurance, min', H.endurance, Q.endurance, 1, 'high'], ['Thrust / weight', H.TW, Q.TW, 2, 'high']];
+    const mo = r => r.mo.status === 'ok' ? 'holds hover' : r.mo.status === 'saturated' ? 'thrust-limited' : r.mo.status === 'yaw-lost' ? 'loses control' : 'loses control';
+    el.innerHTML = `<h3>H6 vs plain quad · same battery, same pod, same payload</h3><div class="scroll-x"><table><tr><th>Metric</th><th>H6</th><th>Quad</th></tr>${rows.map(r => { const hw = r[4] === 'low' ? r[1] < r[2] : r[4] === 'high' ? r[1] > r[2] : false, qw = r[4] === 'low' ? r[2] < r[1] : r[4] === 'high' ? r[2] > r[1] : false; return `<tr><td>${r[0]}</td><td class="mono ${hw ? 'w' : ''}">${fmt(r[1], r[3])}</td><td class="mono ${qw ? 'w' : ''}">${fmt(r[2], r[3])}</td></tr>`; }).join('')}<tr><td>One motor fails in hover</td><td class="mono ${H.mo.status === 'ok' ? 'w' : ''}">${mo(H)}</td><td class="mono ${Q.mo.status === 'ok' ? 'w' : ''}">${mo(Q)}</td></tr></table></div><div class="note">Green marks the better value where better is clear. Pack temperature, mass and size are shown without a verdict.</div>`;
+  }
+  return { el, update };
+}
+function whyWidget() {
+  const el = h('', 'card');
+  function update() {
+    const c = ctx(), H = c.hex, Q = c.quad, span = v => 2 * (v.armR + v.propD / 2);
+    el.innerHTML = `<h3>Why this design wins</h3><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+      <li><b>${fmt(H.Atot / Q.Atot, 1)}× the rotor disk area.</b> Hover power is ${fmt(H.Ptot, 0)} W against ${fmt(Q.Ptot, 0)} W (${fmt((1 - H.Ptot / Q.Ptot) * 100, 0)}% lower), because ideal power falls with the square root of disk area.</li>
+      <li><b>More usable energy and less to spend it on.</b> Endurance ${fmt(H.endurance, 1)} min against ${fmt(Q.endurance, 1)} min at ${fmt(S.env.h, 0)} m (${H.endurance > Q.endurance ? '+' + fmt((H.endurance / Q.endurance - 1) * 100, 0) + '%' : fmt((H.endurance / Q.endurance - 1) * 100, 0) + '%'}).</li>
+      <li><b>Warm battery.</b> With the loop the pack sits at ${fmt(H.batt.Tcell, 1)} °C (capacity factor ${fmt(H.batt.f, 2)}); the quad's pack is at ${fmt(Q.batt.Tcell, 1)} °C (${fmt(Q.batt.f, 2)}).</li>
+      <li><b>Survives a motor loss.</b> H6: ${H.mo.status === 'ok' ? 'holds hover with the other five rotors' : 'cannot hold hover at these conditions'}. Quad: ${Q.mo.status === 'ok' ? 'holds hover' : 'cannot keep roll, pitch and lift together'}.</li>
+      <li><b>Cost, stated plainly.</b> The H6 is ${fmt(H.mass.total - Q.mass.total, 1)} kg heavier and ${fmt(span(H.v) - span(Q.v), 1)} m wider, and has more parts to build and maintain.</li></ul>`;
+  }
+  return { el, update };
+}
+let race = { t: 0, failed: false };
+function startRace() {
+  stopRace(true); startCompareRace(); buildBars(); sim.altCmd = 0.42 + 6; sim2.altCmd = 0.42 + 6; race = { t: 0, failed: false };
+  flyTo([0, 6.5, 17], [0, 3.2, 0], 1.4); toast('Both aircraft take off, then motor 1 fails on each');
+}
+function stopRace(keep) { simCmp.on = false; race = { t: 0, failed: false }; if (!keep) { setStageMode('compare'); setView('iso'); } }
+function raceWidget() {
+  const el = h('', 'card'); el.innerHTML = `<h3>Motor-out race</h3><div class="row"><button class="btn pri" id="r_run">Run race</button><button class="btn warn" id="r_fail">Fail motor 1 now</button><button class="btn" id="r_reset">Reset</button></div><div class="note">Both aircraft use the same controller design: detect the failure after 0.2 s, then redistribute thrust. Only the geometry differs.</div>`;
+  $('#r_run', el).addEventListener('click', startRace);
+  $('#r_fail', el).addEventListener('click', () => { if (!simCmp.on) { toast('Run the race first'); return; } failBoth(); });
+  $('#r_reset', el).addEventListener('click', () => stopRace(false));
+  return { el, update() { } };
+}
+function failBoth() { sim.failMotor(0); sim2.failMotor(0); race.failed = true; }
+function updateCompareHud() {
+  const hud = $('#flightHud'); if (!simCmp.on) { hud.innerHTML = `<div class="full"><span>Press “Run race”</span></div>`; return; }
+  const row = (nm, s) => { const t = s.telemetry(); const st = t.crashed ? 'DOWN' : t.failed.length ? 'MOTOR OUT' : t.mode.toUpperCase(); return `<div class="full"><span>${nm}</span><b style="color:${t.crashed ? 'var(--bad)' : t.failed.length ? 'var(--warn)' : 'inherit'}">${st}</b></div><div><span>AGL</span><b>${fmt(t.agl, 1)} m</b></div><div><span>TILT</span><b>${fmt(t.tilt, 0)}°</b></div>`; };
+  hud.innerHTML = row('H6', sim) + row('QUAD', sim2);
+}
+
+/* ---------- notes ---------- */
+function notesWidget() {
+  const el = h('', 'card');
+  function update() {
+    el.innerHTML = `<h3>Assumptions and limits</h3><div class="note">Every number on this page comes from the model below. “Assumed” means a design assumption to be replaced by a measured, simulated or datasheet value. Nothing here is a certified performance claim.</div>
+      <div class="scroll-x"><table><tr><th>Item</th><th>Value</th><th></th></tr>${assumptionRows().map(r => `<tr><td>${r[0]}</td><td style="text-align:left;font-size:12px">${r[1]}</td><td><span class="tag">${r[2]}</span></td></tr>`).join('')}</table></div>
+      <h3>What to model and simulate in 3DEXPERIENCE</h3><ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px">${PLAN_3DX.map(p => `<li><b>${p[0]}.</b> ${p[1]}</li>`).join('')}</ol>`;
+  }
+  return { el, update };
+}
+
+/* ---------- guided tour ---------- */
+function tourWidget() {
+  const el = h('', 'card step');
+  function update() {
+    const i = Math.max(S.tourStep, 0), st = TOUR[i];
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><h3>Guided tour · ${i + 1} of ${TOUR.length}</h3></div><h2>${st.title}</h2>${st.html(ctx())}
+      <div class="dots">${TOUR.map((_, k) => `<button data-k="${k}" class="${k === i ? 'on' : k < i ? 'past' : ''}" aria-label="Step ${k + 1}"></button>`).join('')}</div>
+      <div class="row"><button class="btn" id="t_prev" ${i === 0 ? 'disabled' : ''}>Back</button><button class="btn pri" id="t_next" ${i === TOUR.length - 1 ? 'disabled' : ''}>Next</button><span class="note">Arrow keys also work.</span></div>`;
+    $('#t_prev', el).addEventListener('click', () => tourGo(i - 1)); $('#t_next', el).addEventListener('click', () => tourGo(i + 1));
+    $$('.dots button', el).forEach(b => b.addEventListener('click', () => tourGo(+b.dataset.k)));
+  }
+  return { el, update };
+}
+function tourGo(i) {
+  i = clamp(i, 0, TOUR.length - 1); const first = S.tourStep < 0; S.tourStep = i; const st = TOUR[i];
+  stopRace(true); setStageMode(st.stage); S.labels = !!st.labels; $('#btnLabels').setAttribute('aria-pressed', S.labels);
+  exTarget = st.explode; setSelected(st.select || null);
+  if (st.stage === 'compare') { flyTo([0, 3.6, 10.5], [0, 0.6, 0], 1.1); if (st.race) setTimeout(() => { if (S.tourStep === i) startRace(); }, 900); }
+  else setView(st.view);
+  renderPanel();
+}
+
+/* ---------- widget registry and panels ---------- */
+const WG = {}; const mk = (k, f) => WG[k] || (WG[k] = f());
+const PANELS = {
+  design: () => [mk('parts', partsWidget), mk('info', infoWidget), mk('mass', massWidget)],
+  physics: () => [mk('cond', condWidget), mk('kpi', kpiWidget), mk('endc', enduranceChart), mk('thc', thrustChart), mk('form', formulaWidget), mk('ass', assumpWidget)],
+  flight: () => [mk('cond', condWidget), mk('flight', flightWidget)],
+  compare: () => [mk('cond', condWidget), mk('cmp', cmpTableWidget), mk('why', whyWidget), mk('race', raceWidget), mk('endc2', enduranceChart)],
+  present: () => { const st = TOUR[Math.max(S.tourStep, 0)], ex = []; if (st.tab === 'physics') ex.push(mk('endc3', enduranceChart), mk('thc2', thrustChart)); if (st.tab === 'compare') ex.push(mk('cmp2', cmpTableWidget)); if (st.tab === 'notes') ex.push(mk('notes2', notesWidget)); return [mk('tour', tourWidget), ...ex, mk('cond', condWidget)]; },
+  notes: () => [mk('notes', notesWidget)]
+};
+let current = [];
+function renderPanel() { current = PANELS[S.tab](); const p = $('#panel'); p.replaceChildren(...current.map(w => w.el)); current.forEach(w => w.update()); if (S.tab !== 'design' || true) p.scrollTop = 0; }
+function updateWidgets() { current.forEach(w => w.update()); }
+function showTab(tab) {
+  S.tab = tab; $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+  const stage = tab === 'flight' ? 'flight' : tab === 'compare' ? 'compare' : 'design';
+  stopRace(true); KEYS.clear();
+  if (tab === 'present') { if (S.tourStep < 0) { S.tourStep = 0; } tourGo(S.tourStep); return; }
+  const changed = S.stage !== stage; if (changed || tab === 'flight') setStageMode(stage);
+  if (changed && stage !== 'flight') { W.controls.maxDistance = 60; setView('iso', true); }
+  else if (tab === 'compare') setView('iso'); if (tab === 'design' || tab === 'physics' || tab === 'notes') { if (S.stage === 'design' && tab !== 'physics' && tab !== 'notes') { /* keep camera */ } }
+  renderPanel();
+}
+$$('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+let envRaf = 0;
+function envChanged() {
+  ctxDirty = true; SWEEP = null;
+  const a = ctx().hex.atm; $('#statusTxt').textContent = `${fmt(S.env.h, 0)} m · ${fmt(a.Tc, 0)} °C · ρ ${fmt(a.rho, 3)}`;
+  if (S.stage === 'flight') { if (!sim.armed) resetFlight(); else { sim.env.h = S.env.h; sim.env.dT = S.env.dT; } }
+  cancelAnimationFrame(envRaf); envRaf = requestAnimationFrame(updateWidgets);
+}
+
+/* ---------- stage controls ---------- */
+$$('#viewbar [data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+$('#btnLabels').addEventListener('click', () => { S.labels = !S.labels; $('#btnLabels').setAttribute('aria-pressed', S.labels); });
+$('#btnWire').addEventListener('click', () => setWire(!S.wire));
+$('#btnSpin').addEventListener('click', () => { S.spin = !S.spin; $('#btnSpin').setAttribute('aria-pressed', S.spin); });
+$('#explode').addEventListener('input', e => { exTarget = null; S.explode = +e.target.value / 100; $('#explodeOut').textContent = Math.round(S.explode * 100) + '%'; });
+S.hooks.push({
+  onSelect() { if (S.tab === 'design' || S.tab === 'present') { if (WG.info) WG.info.update(); } },
+  preStep(dt) {
+    if (S.stage === 'flight') sim.setInputs(readInput());
+    else if (S.stage === 'compare' && simCmp.on) { race.t += dt; if (!race.failed && race.t > 9) { failBoth(); toast('Motor 1 failed on both aircraft'); } }
+  },
+  onFrame(dt) {
+    if (exTarget !== null) { S.explode += (exTarget - S.explode) * Math.min(1, dt * 3.5); if (Math.abs(S.explode - exTarget) < 0.002) { S.explode = exTarget; exTarget = null; } $('#explode').value = S.explode * 100; $('#explodeOut').textContent = Math.round(S.explode * 100) + '%'; }
+    const f = frame % 4 === 0;
+    if (S.stage === 'flight') { updateBars(sim); if (f) { updateFlightHud(); drawHistory(sim); } }
+    else if (S.stage === 'compare' && f) { updateCompareHud(); if (simCmp.on) { updateBars(sim); drawHistory(sim); } }
+    updateTags();
+  },
+  onTheme() { }
+});
+/* name tags above each aircraft in compare view */
+const TAGS = ['MedVayu H6', 'Reference quad'].map(t => { const d = document.createElement('div'); d.className = 'plabel'; d.textContent = t; d.style.display = 'none'; $('#labelLayer').appendChild(d); return d; });
+const _tp = new THREE.Vector3();
+function updateTags() {
+  const on = S.stage === 'compare' && !simCmp.on; TAGS.forEach((t, i) => { t.style.display = on ? 'block' : 'none'; if (!on) return; _tp.set((i ? 1 : -1) * CMP_X, 0.95, 0).project(W.camera); t.style.left = ((_tp.x * 0.5 + 0.5) * W.stage.clientWidth) + 'px'; t.style.top = ((-_tp.y * 0.5 + 0.5) * W.stage.clientHeight - 38) + 'px'; t.style.transform = 'translate(-50%,-50%)'; });
+}
+
+/* ---------- boot ---------- */
+buildBars(); envChanged(); showTab('design');
+if (location.hash === '#present') showTab('present');
+
+</script>

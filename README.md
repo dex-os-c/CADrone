@@ -2,12 +2,19 @@
 
 High-altitude hexacopter with a modular medical payload pod, for the CADD Centre International Design Competition 2026 (eVTOL/Drones).
 
-Status: work in progress. The interactive dashboard page is not assembled yet.
+Single-page interactive dashboard: 3D model with exploded view and part details, live physics (ISA, momentum theory, battery derating, thrust-to-weight, endurance, motor-out check), flight simulation with motor failure, altitude charts, comparison against a plain quadcopter, and a guided tour.
 
-## What is here
-- `src/physics.js`: ISA atmosphere, momentum-theory hover power, battery derating, motor-out check, control allocation
-- `src/sim.js`: 6-DOF rigid-body flight sim with cascaded controller and motor-failure injection
-- `src/scene_mats.js`: procedural textures, PBR materials, sky, terrain (Three.js r128)
-- `tests/`: Node checks (`npm i three@0.128.0`, then `node tests/t_phys.js` and `node tests/t_sim2.js`)
+## Layout
+- `dist/index.html`: the built page (loads three.js r128 from a CDN)
+- `src/physics.js`: engineering model (every assumption is marked ASSUMED)
+- `src/sim.js`: 6-DOF rigid-body flight sim, controller, thrust allocation, fault injection
+- `src/model.js`, `src/scene_mats.js`: procedural geometry, materials, textures
+- `src/app_*.js`, `src/shell.html`: scene, UI, charts, tour and page shell
+- `src/build.js`: concatenates the sources into `dist/`
+- `tests/`: Node checks for the physics, sim and geometry (`npm i three@0.128.0`)
 
-All mass, efficiency and battery figures in `physics.js` are marked ASSUMED. Replace them with datasheet or test values.
+## Build
+`node src/build.js` (writes `dist/index.html`; `dist/test.html` needs three in `node_modules`).
+
+## Honest limits
+Hover-only endurance, constant figure of merit, no battery voltage sag, no blade-element aerodynamics. All masses and efficiencies are estimates to be replaced by 3DEXPERIENCE results or datasheet values.

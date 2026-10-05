@@ -112,6 +112,8 @@ function makeMaterials() {
   mat.ledGreen = new THREE.MeshBasicMaterial({ color: 0x2ee66b });
   mat.ledWhite = new THREE.MeshBasicMaterial({ color: 0xffffff });
   mat.disc = new THREE.MeshBasicMaterial({ map: radialDiscTexture(), color: 0xcfd8de, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  // Plain hex colours are sRGB; the renderer works in linear light, so convert them once here.
+  for (const k in mat) { const x = mat[k]; if (k === 'disc') continue; if (x.color) x.color.convertSRGBToLinear(); if (x.emissive) x.emissive.convertSRGBToLinear(); }
   // Cassette/pod redraw once the web font arrives
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { [mat.podDecal.map, mat.battLabel.map].forEach(t => { if (t.userData && t.userData.draw) { t.userData.draw(t.userData.c.getContext('2d'), t.userData.w, t.userData.h); t.needsUpdate = true; } }); });
   return mat;
@@ -147,13 +149,11 @@ function studioFloorTexture(theme) {
   rg.addColorStop(0, dark ? 'rgba(30,44,54,0.95)' : 'rgba(255,255,255,0.95)'); rg.addColorStop(0.7, dark ? 'rgba(20,32,40,0.6)' : 'rgba(236,242,245,0.6)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = rg; g.fillRect(0, 0, S, S);
   for (let i = 0; i <= 80; i++) { const p = i * per / 10, major = i % 10 === 0, mid = i % 5 === 0; g.strokeStyle = dark ? (major ? 'rgba(130,170,190,0.5)' : mid ? 'rgba(130,170,190,0.22)' : 'rgba(130,170,190,0.09)') : (major ? 'rgba(40,80,100,0.45)' : mid ? 'rgba(40,80,100,0.2)' : 'rgba(40,80,100,0.08)'); g.lineWidth = major ? 2 : 1; g.beginPath(); g.moveTo(p, 0); g.lineTo(p, S); g.moveTo(0, p); g.lineTo(S, p); g.stroke(); }
-  g.fillStyle = dark ? 'rgba(160,200,220,0.8)' : 'rgba(30,70,90,0.8)'; g.font = '600 15px "IBM Plex Mono", monospace'; g.textAlign = 'center';
-  for (let m = -3; m <= 3; m++) if (m) g.fillText(m + ' m', S / 2 + m * per, S / 2 + 18);
   // circular mask
   g.globalCompositeOperation = 'destination-in';
   const mk = g.createRadialGradient(S / 2, S / 2, S * 0.28, S / 2, S / 2, S / 2); mk.addColorStop(0, 'rgba(0,0,0,1)'); mk.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = mk; g.fillRect(0, 0, S, S);
-  const t = new THREE.CanvasTexture(c); return srgb(t);
+  const t = new THREE.CanvasTexture(c); t.flipY = false; return srgb(t);
 }
 
 /* ---------- Terrain texture and landing pad ---------- */
