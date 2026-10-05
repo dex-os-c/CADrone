@@ -40,6 +40,7 @@ function failSelected() { const sel = $('#f_motor'); const i = sel ? +sel.value 
 function flightWidget() {
   const el = h('', 'card'), n6 = Array.from({ length: 6 }, (_, i) => `<option value="${i}">M${i + 1}</option>`).join('');
   el.innerHTML = `<h3>Flight simulation</h3>
+    <div class="row"><button class="btn pri" id="f_full">Full-screen flight</button></div>
     <div class="row"><button class="btn sm" data-veh="hex" aria-pressed="true">MedVayu H6</button><button class="btn sm" data-veh="quad" aria-pressed="false">Reference quad</button></div>
     <div class="row"><button class="btn pri" data-cmd="takeoff">Takeoff</button><button class="btn" data-cmd="hover">Hover</button><button class="btn" data-cmd="forward">Forward</button><button class="btn" data-cmd="land">Land</button><button class="btn" data-cmd="reset">Reset</button></div>
     <div class="row"><select id="f_motor" class="btn" aria-label="Motor to fail">${n6}</select><button class="btn warn" id="f_fail">Fail motor</button><button class="btn" id="f_restore">Restore motors</button></div>
@@ -49,7 +50,7 @@ function flightWidget() {
     <div class="note">Physics: rigid body, six rotors with 60 ms lag, cascaded position, attitude and rate control, thrust allocation. The controller learns of a failure 0.2 s after it happens.</div>`;
   $$('[data-cmd]', el).forEach(b => b.addEventListener('click', () => flightCmd(b.dataset.cmd)));
   $$('[data-veh]', el).forEach(b => b.addEventListener('click', () => { S.flightVeh = b.dataset.veh; setStageMode('flight'); update(); buildBars(); }));
-  $('#f_fail', el).addEventListener('click', failSelected); $('#f_restore', el).addEventListener('click', () => { sim.restoreMotors(); });
+  $('#f_full', el).addEventListener('click', enterFs); $('#f_fail', el).addEventListener('click', failSelected); $('#f_restore', el).addEventListener('click', () => { sim.restoreMotors(); });
   $('#f_wind', el).addEventListener('input', e => { S.wind = +e.target.value; $('#f_windo', el).textContent = fmt(S.wind, 1) + ' m/s'; });
   function update() { $$('[data-veh]', el).forEach(b => b.setAttribute('aria-pressed', b.dataset.veh === S.flightVeh)); const n = Phys.VEH[S.flightVeh].n; $$('#f_motor option', el).forEach((o, i) => { o.hidden = i >= n; }); $('#f_msg', el).textContent = S.flightVeh === 'quad' ? 'Reference quad: four 610 mm props, no warming loop. Fail a motor and watch it tumble.' : 'Takeoff, then fail a motor in hover. Watch the bars: the five healthy rotors share the load.'; }
   return { el, update };
@@ -167,12 +168,13 @@ function updateWidgets() { current.forEach(w => w.update()); }
 function showTab(tab) {
   S.tab = tab; $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
   const stage = tab === 'flight' ? 'flight' : tab === 'compare' ? 'compare' : 'design';
-  stopRace(true); KEYS.clear();
+  stopRace(true); KEYS.clear(); if (tab !== 'flight' && document.body.classList.contains('fs')) exitFs();
   if (tab === 'present') { if (S.tourStep < 0) { S.tourStep = 0; } tourGo(S.tourStep); return; }
   const changed = S.stage !== stage; if (changed || tab === 'flight') setStageMode(stage);
   if (changed && stage !== 'flight') { W.controls.maxDistance = 60; setView('iso', true); }
   else if (tab === 'compare') setView('iso'); if (tab === 'design' || tab === 'physics' || tab === 'notes') { if (S.stage === 'design' && tab !== 'physics' && tab !== 'notes') { /* keep camera */ } }
   renderPanel();
+  if (tab === 'flight' && window.matchMedia('(max-width: 900px)').matches) enterFs();
 }
 $$('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
@@ -211,6 +213,29 @@ const _tp = new THREE.Vector3();
 function updateTags() {
   const on = S.stage === 'compare' && !simCmp.on; TAGS.forEach((t, i) => { t.style.display = on ? 'block' : 'none'; if (!on) return; _tp.set((i ? 1 : -1) * CMP_X, 0.95, 0).project(W.camera); t.style.left = ((_tp.x * 0.5 + 0.5) * W.stage.clientWidth) + 'px'; t.style.top = ((-_tp.y * 0.5 + 0.5) * W.stage.clientHeight - 38) + 'px'; t.style.transform = 'translate(-50%,-50%)'; });
 }
+
+
+/* ---------- full-screen flight ---------- */
+function stickWanted() { return S.stage === 'flight' && window.matchMedia('(pointer: coarse), (max-width: 900px)').matches; }
+function enterFs() {
+  document.body.classList.add('fs');
+  const el = W.stage; try { const p = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { }); } catch (e) { }
+  try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (e) { }
+  $('#stick').style.display = stickWanted() ? 'flex' : 'none'; resize();
+}
+function exitFs() {
+  document.body.classList.remove('fs');
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
+  try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) { }
+  KEYS.clear(); resize();
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('fs') && !fsSwitching) exitFs(); });
+let fsSwitching = false;
+$('#fsExit').addEventListener('click', exitFs);
+$$('#fsBar [data-fc]').forEach(b => b.addEventListener('click', () => flightCmd(b.dataset.fc)));
+$('#fsFailBtn').addEventListener('click', () => { if (!sim.armed) { toast('Take off first'); return; } let i = 0; while (i < sim.veh.n && sim.failed.has(i)) i++; if (i >= sim.veh.n) return; sim.failMotor(i); toast('Motor M' + (i + 1) + ' failed'); });
+$('#fsRestoreBtn').addEventListener('click', () => { sim.restoreMotors(); toast('Motors restored'); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('fs')) exitFs(); });
 
 /* ---------- boot ---------- */
 buildBars(); envChanged(); showTab('design');

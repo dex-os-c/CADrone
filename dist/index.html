@@ -198,6 +198,34 @@ kbd { font: 500 11px var(--f-mono); border: 1px solid var(--line); border-bottom
   #stage[data-mode="flight"] #flightHud { max-width: calc(100% - 172px); }
   .partlist { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- full-screen flight: the stage covers the screen and every control lives inside it ---------- */
+#fsUi { display: none; }
+body.fs { overflow: hidden; }
+body.fs .top, body.fs #panel { display: none !important; }
+body.fs .app { display: block; height: 100vh; height: 100dvh; min-height: 0; }
+body.fs #stage { position: fixed !important; inset: 0; top: 0 !important; height: auto !important; min-height: 0 !important; z-index: 100; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.fs #fsUi { display: block; }
+body.fs #statusPill { display: none; }
+body.fs .toast { top: auto; bottom: calc(232px + env(safe-area-inset-bottom, 0px)); }
+body.fs #flightHud { top: calc(10px + env(safe-area-inset-top, 0px)); left: calc(10px + env(safe-area-inset-left, 0px)); max-width: calc(100% - 190px); }
+body.fs #rotorBars { top: calc(54px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); bottom: auto; width: 150px; }
+body.fs #stick { padding: 0 calc(18px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) calc(18px + env(safe-area-inset-left, 0px)); }
+.fsbtn { padding: 9px 14px; font: 600 13px/1 var(--f-body); color: var(--hud-ink); cursor: pointer; }
+.fsbtn.bad { background: var(--bad); color: #fff; border-color: var(--bad); }
+#fsExit { right: calc(10px + env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); }
+#fsBar { left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 4px; padding: 4px; max-width: calc(100% - 20px); }
+#fsBar button { border: 0; background: transparent; color: var(--hud-ink); padding: 10px 12px; border-radius: 6px; font: 600 12px/1 var(--f-body); }
+#fsBar button.pri { background: var(--accent); color: var(--on-accent); }
+#fsBar button:active { background: var(--accent-soft); }
+#fsFail .fsbtn { position: static; }
+#fsFail { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+@media (orientation: landscape) and (max-height: 520px) {
+  #fsBar { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); }
+  body.fs #flightHud { max-width: 210px; }
+  body.fs #rotorBars { top: calc(56px + env(safe-area-inset-top, 0px)); }
+  .joy { width: 100px; height: 100px; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -227,6 +255,11 @@ kbd { font: 500 11px var(--f-mono); border: 1px solid var(--line); border-bottom
     <div class="hud" id="rotorBars"><div class="rbars" id="rbars"></div><canvas id="thrustHist" width="240" height="50"></canvas></div>
     <div class="hud" id="explodeBox"><label for="explode">Exploded</label><input type="range" id="explode" min="0" max="100" value="0" aria-label="Exploded view"><output id="explodeOut" class="mono">0%</output></div>
     <div id="stick"><div class="joy" id="joyL"><i></i><b style="left:50%;top:4px;transform:translateX(-50%)">UP</b><b style="left:50%;bottom:4px;transform:translateX(-50%)">DOWN</b><b style="left:6px;top:50%">YAW</b></div><div class="joy" id="joyR"><i></i><b style="left:50%;top:4px;transform:translateX(-50%)">FWD</b><b style="left:50%;bottom:4px;transform:translateX(-50%)">BACK</b></div></div>
+    <div id="fsUi">
+      <button class="hud fsbtn" id="fsExit" aria-label="Exit full screen">✕ Exit</button>
+      <div class="hud" id="fsBar" role="toolbar" aria-label="Flight commands"><button data-fc="takeoff" class="pri">Takeoff</button><button data-fc="hover">Hover</button><button data-fc="forward">Forward</button><button data-fc="land">Land</button><button data-fc="reset">Reset</button></div>
+      <div id="fsFail"><button class="hud fsbtn bad" id="fsFailBtn">Fail motor</button><button class="hud fsbtn" id="fsRestoreBtn">Restore</button></div>
+    </div>
     <div class="toast" id="toast"></div>
   </section>
   <aside id="panel" aria-live="polite"></aside>
@@ -1783,6 +1816,7 @@ function failSelected() { const sel = $('#f_motor'); const i = sel ? +sel.value 
 function flightWidget() {
   const el = h('', 'card'), n6 = Array.from({ length: 6 }, (_, i) => `<option value="${i}">M${i + 1}</option>`).join('');
   el.innerHTML = `<h3>Flight simulation</h3>
+    <div class="row"><button class="btn pri" id="f_full">Full-screen flight</button></div>
     <div class="row"><button class="btn sm" data-veh="hex" aria-pressed="true">MedVayu H6</button><button class="btn sm" data-veh="quad" aria-pressed="false">Reference quad</button></div>
     <div class="row"><button class="btn pri" data-cmd="takeoff">Takeoff</button><button class="btn" data-cmd="hover">Hover</button><button class="btn" data-cmd="forward">Forward</button><button class="btn" data-cmd="land">Land</button><button class="btn" data-cmd="reset">Reset</button></div>
     <div class="row"><select id="f_motor" class="btn" aria-label="Motor to fail">${n6}</select><button class="btn warn" id="f_fail">Fail motor</button><button class="btn" id="f_restore">Restore motors</button></div>
@@ -1792,7 +1826,7 @@ function flightWidget() {
     <div class="note">Physics: rigid body, six rotors with 60 ms lag, cascaded position, attitude and rate control, thrust allocation. The controller learns of a failure 0.2 s after it happens.</div>`;
   $$('[data-cmd]', el).forEach(b => b.addEventListener('click', () => flightCmd(b.dataset.cmd)));
   $$('[data-veh]', el).forEach(b => b.addEventListener('click', () => { S.flightVeh = b.dataset.veh; setStageMode('flight'); update(); buildBars(); }));
-  $('#f_fail', el).addEventListener('click', failSelected); $('#f_restore', el).addEventListener('click', () => { sim.restoreMotors(); });
+  $('#f_full', el).addEventListener('click', enterFs); $('#f_fail', el).addEventListener('click', failSelected); $('#f_restore', el).addEventListener('click', () => { sim.restoreMotors(); });
   $('#f_wind', el).addEventListener('input', e => { S.wind = +e.target.value; $('#f_windo', el).textContent = fmt(S.wind, 1) + ' m/s'; });
   function update() { $$('[data-veh]', el).forEach(b => b.setAttribute('aria-pressed', b.dataset.veh === S.flightVeh)); const n = Phys.VEH[S.flightVeh].n; $$('#f_motor option', el).forEach((o, i) => { o.hidden = i >= n; }); $('#f_msg', el).textContent = S.flightVeh === 'quad' ? 'Reference quad: four 610 mm props, no warming loop. Fail a motor and watch it tumble.' : 'Takeoff, then fail a motor in hover. Watch the bars: the five healthy rotors share the load.'; }
   return { el, update };
@@ -1910,12 +1944,13 @@ function updateWidgets() { current.forEach(w => w.update()); }
 function showTab(tab) {
   S.tab = tab; $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
   const stage = tab === 'flight' ? 'flight' : tab === 'compare' ? 'compare' : 'design';
-  stopRace(true); KEYS.clear();
+  stopRace(true); KEYS.clear(); if (tab !== 'flight' && document.body.classList.contains('fs')) exitFs();
   if (tab === 'present') { if (S.tourStep < 0) { S.tourStep = 0; } tourGo(S.tourStep); return; }
   const changed = S.stage !== stage; if (changed || tab === 'flight') setStageMode(stage);
   if (changed && stage !== 'flight') { W.controls.maxDistance = 60; setView('iso', true); }
   else if (tab === 'compare') setView('iso'); if (tab === 'design' || tab === 'physics' || tab === 'notes') { if (S.stage === 'design' && tab !== 'physics' && tab !== 'notes') { /* keep camera */ } }
   renderPanel();
+  if (tab === 'flight' && window.matchMedia('(max-width: 900px)').matches) enterFs();
 }
 $$('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
@@ -1954,6 +1989,29 @@ const _tp = new THREE.Vector3();
 function updateTags() {
   const on = S.stage === 'compare' && !simCmp.on; TAGS.forEach((t, i) => { t.style.display = on ? 'block' : 'none'; if (!on) return; _tp.set((i ? 1 : -1) * CMP_X, 0.95, 0).project(W.camera); t.style.left = ((_tp.x * 0.5 + 0.5) * W.stage.clientWidth) + 'px'; t.style.top = ((-_tp.y * 0.5 + 0.5) * W.stage.clientHeight - 38) + 'px'; t.style.transform = 'translate(-50%,-50%)'; });
 }
+
+
+/* ---------- full-screen flight ---------- */
+function stickWanted() { return S.stage === 'flight' && window.matchMedia('(pointer: coarse), (max-width: 900px)').matches; }
+function enterFs() {
+  document.body.classList.add('fs');
+  const el = W.stage; try { const p = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { }); } catch (e) { }
+  try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (e) { }
+  $('#stick').style.display = stickWanted() ? 'flex' : 'none'; resize();
+}
+function exitFs() {
+  document.body.classList.remove('fs');
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
+  try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) { }
+  KEYS.clear(); resize();
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('fs') && !fsSwitching) exitFs(); });
+let fsSwitching = false;
+$('#fsExit').addEventListener('click', exitFs);
+$$('#fsBar [data-fc]').forEach(b => b.addEventListener('click', () => flightCmd(b.dataset.fc)));
+$('#fsFailBtn').addEventListener('click', () => { if (!sim.armed) { toast('Take off first'); return; } let i = 0; while (i < sim.veh.n && sim.failed.has(i)) i++; if (i >= sim.veh.n) return; sim.failMotor(i); toast('Motor M' + (i + 1) + ' failed'); });
+$('#fsRestoreBtn').addEventListener('click', () => { sim.restoreMotors(); toast('Motors restored'); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('fs')) exitFs(); });
 
 /* ---------- boot ---------- */
 buildBars(); envChanged(); showTab('design');
